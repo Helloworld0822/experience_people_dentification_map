@@ -342,7 +342,43 @@ fn glyph_for(ch: char) -> Option<Glyph> {
 }
 
 /// Fetch the latest known count for `space_id` from Redis, or 0.
+///
+/// Results are cached in-process for 200ms to avoid hammering Redis
+/// when several browsers are connected to the same camera stream.
+/// The cache is intentionally short so manual count changes still
+/// show up within a couple of frames.
 pub async fn current_count(state: &AppState, space_id: u8) -> u32 {
+    use std::sync::OnceLock;
+    use std::time::{Duration, Instant};
+    use tokio::sync::Mutex;
+
+    // One tiny cache per (process, space). The Mutex is uncontended
+    // most of the time and the inner state is two `u8`s plus a timestamp.
+    struct Entry {
+        count: u32,
+        at: Instant,
+    }
+    static CACHE: OnceLock<Mutex<std::collections::HashMap<u8, Entry>>> = OnceLock::new();
+    let cache = CACHE.get_or_init(|| Mutex::new(Default::default()));
+
+    {
+        let guard = cache.lock().await;
+        if let Some(entry) = guard.get(&space_id)
+            && entry.at.elapsed() < Duration::from_millis(200)
+        {
+            return entry.count;
+        }
+    }
+
+    // Cache miss: hit Redis.
+    let count = fetch_count_from_redis(state, space_id).await;
+
+    let mut guard = cache.lock().await;
+    guard.insert(space_id, Entry { count, at: Instant::now() });
+    count
+}
+
+async fn fetch_count_from_redis(state: &AppState, space_id: u8) -> u32 {
     let mut conn = match state.redis.get_multiplexed_async_connection().await {
         Ok(c) => c,
         Err(_) => return 0,
