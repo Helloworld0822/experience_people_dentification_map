@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 axum = "0.8"
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "sync"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "sync", "time"] }
 tower-http = { version = "0.6", features = ["cors", "trace"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -13,3 +13,8 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 thiserror = "2"
+redis = { version = "0.27", default-features = false, features = ["tokio-comp"] }
+image = { version = "0.25", default-features = false, features = ["jpeg"] }
+async-stream = "0.3"
+futures-core = "0.3"
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
