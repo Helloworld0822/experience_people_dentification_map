@@ -1,0 +1,32 @@
+services:
+  redis:
+    image: docker.io/library/redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Containerfile
+    environment:
+      BIND_ADDR: 0.0.0.0:8080
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - redis
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Containerfile
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  redis-data:

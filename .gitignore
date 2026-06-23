@@ -1,0 +1,28 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Local environment files
+.env
+.env.local
+
+# Backend (Rust)
+backend/target/
+backend/Cargo.lock
+
+# Frontend (Node)
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+frontend/*.local
+frontend/.env.local
+
+# Playwright / MCP test scratch
+.playwright-mcp/
+
+# Logs
+*.log
