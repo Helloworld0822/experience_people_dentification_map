@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+
 import type { Space } from '../types/floor'
 import { formatClock, relativeAgo } from '../utils/formatFloor'
 import { CameraFeed } from './CameraFeed'
@@ -10,6 +12,14 @@ type SpaceDetailsProps = {
   onClose: () => void
 }
 
+/**
+ * Space details side panel.
+ *
+ * On desktop (>768px): renders as a sticky sidebar.
+ * On mobile (<=768px): renders as a full-screen overlay with a
+ *   bottom-sheet style, backdrop, and swipe-down handle. The
+ *   backdrop tap closes the panel. Escape key also closes it.
+ */
 export function SpaceDetails({
   space,
   count,
@@ -17,6 +27,25 @@ export function SpaceDetails({
   onBump,
   onClose,
 }: SpaceDetailsProps) {
+  const panelRef = useRef<HTMLElement>(null)
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!space) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [space, onClose])
+
+  // Focus trap: focus the panel when it opens
+  useEffect(() => {
+    if (space && panelRef.current) {
+      panelRef.current.focus()
+    }
+  }, [space])
+
   if (!space) {
     return (
       <aside className="space-details space-details--empty">
@@ -29,50 +58,68 @@ export function SpaceDetails({
   }
 
   return (
-    <aside className="space-details" aria-live="polite">
-      <header className="space-details__header">
-        <span className="space-details__id">공간 {space.id}</span>
-        <button
-          type="button"
-          className="space-details__close"
-          onClick={onClose}
-          aria-label="상세 패널 닫기"
-        >
-          ×
-        </button>
-      </header>
-      <h2 className="space-details__title">{space.title_ko}</h2>
-      <p className="space-details__sub">{space.title_en}</p>
-      <p className="space-details__desc">{space.description_ko}</p>
+    <>
+      {/* Mobile backdrop */}
+      <div
+        className="space-details-backdrop"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <aside
+        ref={panelRef}
+        className="space-details"
+        aria-live="polite"
+        tabIndex={-1}
+      >
+        {/* Mobile swipe handle */}
+        <div className="space-details__handle" aria-hidden="true">
+          <span className="space-details__handle-bar" />
+        </div>
 
-      <CameraFeed spaceId={space.id} />
+        <header className="space-details__header">
+          <span className="space-details__id">공간 {space.id}</span>
+          <button
+            type="button"
+            className="space-details__close"
+            onClick={onClose}
+            aria-label="상세 패널 닫기"
+          >
+            ×
+          </button>
+        </header>
+        <h2 className="space-details__title">{space.title_ko}</h2>
+        <p className="space-details__sub">{space.title_en}</p>
+        <p className="space-details__desc">{space.description_ko}</p>
 
-      <div className="space-details__count">
-        <p className="eyebrow">현재 인원</p>
-        <p className="space-details__count-value">{count}</p>
-        <p className="space-details__updated">
-          최근 업데이트 {formatClock(updatedAtMs)} ({relativeAgo(updatedAtMs)})
-        </p>
-      </div>
+        <CameraFeed spaceId={space.id} />
 
-      <div className="space-details__actions" role="group" aria-label="인원 수 조정">
-        <button type="button" onClick={() => void onBump(-1)}>
-          −1
-        </button>
-        <button type="button" onClick={() => void onBump(1)}>
-          +1
-        </button>
-        <button type="button" onClick={() => void onBump(5)}>
-          +5
-        </button>
-        <button
-          type="button"
-          className="space-details__reset"
-          onClick={() => void onBump(-count)}
-        >
-          0으로
-        </button>
-      </div>
-    </aside>
+        <div className="space-details__count">
+          <p className="eyebrow">현재 인원</p>
+          <p className="space-details__count-value">{count}</p>
+          <p className="space-details__updated">
+            최근 업데이트 {formatClock(updatedAtMs)} ({relativeAgo(updatedAtMs)})
+          </p>
+        </div>
+
+        <div className="space-details__actions" role="group" aria-label="인원 수 조정">
+          <button type="button" onClick={() => void onBump(-1)}>
+            −1
+          </button>
+          <button type="button" onClick={() => void onBump(1)}>
+            +1
+          </button>
+          <button type="button" onClick={() => void onBump(5)}>
+            +5
+          </button>
+          <button
+            type="button"
+            className="space-details__reset"
+            onClick={() => void onBump(-count)}
+          >
+            0으로
+          </button>
+        </div>
+      </aside>
+    </>
   )
 }

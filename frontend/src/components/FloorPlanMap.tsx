@@ -24,11 +24,7 @@ const ZONE_LABEL_KO: Record<ZoneId, string> = {
  * exists in the title we just emit the original text on a single line.
  */
 function wrapTitle(text: string, narrow: boolean): string[] {
-  // For wide tiles just emit the title as-is and let the SVG
-  // handle overflow (titles like "해피테이블, 멀티키움 등" are 11
-  // chars but the tile is 300px wide, so they fit).
   if (!narrow) return [text]
-  // Narrow tiles: prefer a natural break at a space or comma.
   const preferMid = Math.ceil(text.length / 2)
   for (let i = preferMid - 2; i <= preferMid + 2; i++) {
     if (i > 0 && i < text.length - 1) {
@@ -38,8 +34,6 @@ function wrapTitle(text: string, narrow: boolean): string[] {
       }
     }
   }
-  // No natural break — split at the midpoint so long single-word
-  // titles ("AI 포토 키오스크") fit in the narrow 70px tile.
   return [text.slice(0, preferMid), text.slice(preferMid)]
 }
 
@@ -51,6 +45,7 @@ function wrapTitle(text: string, narrow: boolean): string[] {
  * - The number badge and people count are rendered as SVG <text> so
  *   screen-readers can read them; the whole tile is the click target.
  * - Tile text size scales with the global font-scale variable.
+ * - Mobile: touch-action: pinch-zoom enables native browser zoom.
  */
 export function FloorPlanMap({
   floor,
@@ -74,6 +69,7 @@ export function FloorPlanMap({
       role="img"
       aria-label="경험관 평면도"
       preserveAspectRatio="xMidYMid meet"
+      style={{ touchAction: 'pan-x pinch-zoom' }}
     >
       <defs>
         {zones.map((z) => (
@@ -169,10 +165,6 @@ export function FloorPlanMap({
         const count = countFor(space.id)
         const zoneColor = zoneById.get(space.zone) ?? '#1f6feb'
         const isNarrow = space.width < 110
-        // Title is placed in the *center of the available area* between
-        // the badge (top) and the count pill (bottom), so neither
-        // overlaps it. We bias it slightly upward for narrow tiles
-        // where the title wraps to two lines.
         const badgeBottom = space.y + 28 + (isNarrow ? 14 : 22) + 8
         const pillTop = space.y + space.height - (isNarrow ? 18 : 26) - 14 - 8
         const titleX = space.x + space.width / 2
@@ -219,9 +211,7 @@ export function FloorPlanMap({
               </text>
             </g>
 
-            {/* Title — vertically centered between the badge (top) and
-                the count pill (bottom). Wraps to two lines for narrow
-                tiles. */}
+            {/* Title */}
             <text
               x={titleX}
               y={titleY}

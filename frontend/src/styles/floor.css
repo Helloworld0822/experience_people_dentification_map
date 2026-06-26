@@ -444,7 +444,13 @@
   font-weight: 800;
 }
 
-/* ---------- Space details (right panel) ---------- */
+/* ---------- Space details (right panel / bottom sheet on mobile) ---------- */
+
+/* Backdrop — hidden on desktop, visible on mobile */
+.space-details-backdrop {
+  display: none;
+}
+
 .space-details {
   position: sticky;
   top: calc(24px * var(--font-scale));
@@ -456,6 +462,7 @@
   border: 2px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-1);
+  outline: none;
 }
 
 .space-details--empty {
@@ -464,6 +471,19 @@
   justify-content: center;
   text-align: center;
   color: var(--color-text-muted);
+}
+
+/* Swipe handle — hidden on desktop */
+.space-details__handle {
+  display: none;
+}
+
+.space-details__handle-bar {
+  display: block;
+  width: 40px;
+  height: 4px;
+  background: #cbd5e1;
+  border-radius: 2px;
 }
 
 .space-details__hint {
@@ -728,6 +748,361 @@
   font-weight: 600;
 }
 
+/* ---------- Mobile optimizations ---------- */
+
+/* Tablet breakpoint (max-width: 1024px) */
+@media (max-width: 1024px) {
+  .app-shell {
+    padding: calc(16px * var(--font-scale)) calc(16px * var(--font-scale))
+      calc(32px * var(--font-scale));
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: calc(12px * var(--font-scale));
+  }
+
+  .topbar__title {
+    font-size: 1.5rem;
+  }
+
+  .topbar__meta {
+    flex-wrap: wrap;
+    gap: calc(12px * var(--font-scale));
+  }
+
+  .topbar__stat {
+    min-width: calc(100px * var(--font-scale));
+  }
+
+  .topbar__stat-value {
+    font-size: 1.3rem;
+  }
+
+  .zone-legend {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: calc(10px * var(--font-scale)) calc(12px * var(--font-scale));
+  }
+
+  .zone-legend::-webkit-scrollbar {
+    display: none;
+  }
+
+  .zone-chip {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* Tablet: bottom sheet style */
+  .space-details-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgb(15 23 42 / 40%);
+    z-index: 99;
+  }
+
+  .space-details {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    max-height: 70vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -4px 20px rgb(15 23 42 / 12%);
+    z-index: 100;
+    transform: translateY(0);
+    transition: transform 200ms ease;
+  }
+
+  .space-details--empty {
+    position: relative;
+    max-height: none;
+    min-height: auto;
+  }
+
+  .space-details__handle {
+    display: flex;
+    justify-content: center;
+    padding: calc(4px * var(--font-scale)) 0
+      calc(8px * var(--font-scale));
+  }
+}
+
+/* Mobile breakpoint (max-width: 768px) */
+@media (max-width: 768px) {
+  :root {
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  .app-shell {
+    padding: calc(12px * var(--font-scale)) calc(12px * var(--font-scale))
+      calc(24px * var(--font-scale));
+    gap: calc(12px * var(--font-scale));
+  }
+
+  .topbar {
+    padding: calc(16px * var(--font-scale));
+  }
+
+  .topbar__title {
+    font-size: 1.3rem;
+  }
+
+  .eyebrow {
+    font-size: 0.8rem;
+  }
+
+  .topbar__meta {
+    flex-direction: column;
+    gap: calc(8px * var(--font-scale));
+  }
+
+  .topbar__stat {
+    min-width: auto;
+    display: flex;
+    align-items: center;
+    gap: calc(8px * var(--font-scale));
+  }
+
+  .topbar__stat-value {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+
+  .topbar__stat-sub {
+    font-size: 0.8rem;
+  }
+
+  .topbar__refresh {
+    width: 100%;
+    min-height: calc(48px * var(--font-scale));
+  }
+
+  .font-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .font-toggle__label {
+    font-size: 0.75rem;
+    padding: 0 calc(8px * var(--font-scale));
+  }
+
+  .font-toggle__btn {
+    font-size: 0.9rem;
+    padding: 0 calc(10px * var(--font-scale));
+  }
+
+  .zone-legend {
+    padding: calc(8px * var(--font-scale)) calc(10px * var(--font-scale));
+    gap: calc(8px * var(--font-scale));
+  }
+
+  .zone-chip {
+    padding: 0 calc(14px * var(--font-scale));
+    font-size: 0.95rem;
+    min-height: calc(44px * var(--font-scale));
+  }
+
+  .zone-chip__dot {
+    width: calc(12px * var(--font-scale));
+    height: calc(12px * var(--font-scale));
+  }
+
+  .content {
+    grid-template-columns: 1fr;
+    gap: calc(12px * var(--font-scale));
+  }
+
+  .map-frame {
+    padding: calc(12px * var(--font-scale));
+    border-radius: var(--radius-lg);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .floor-map {
+    min-width: 320px;
+  }
+
+  /* Mobile bottom sheet backdrop */
+  .space-details-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgb(15 23 42 / 50%);
+    z-index: 99;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Mobile bottom sheet */
+  .space-details {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    max-height: 85vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -4px 20px rgb(15 23 42 / 15%);
+    z-index: 100;
+    padding: calc(12px * var(--font-scale)) calc(16px * var(--font-scale))
+      calc(24px * var(--font-scale));
+    animation: sheet-slide-up 200ms ease;
+  }
+
+  @keyframes sheet-slide-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  .space-details--empty {
+    position: relative;
+    max-height: none;
+    min-height: auto;
+    padding: calc(16px * var(--font-scale));
+    animation: none;
+  }
+
+  /* Swipe handle */
+  .space-details__handle {
+    display: flex;
+    justify-content: center;
+    padding: calc(4px * var(--font-scale)) 0
+      calc(8px * var(--font-scale));
+  }
+
+  .space-details__header {
+    margin-bottom: calc(4px * var(--font-scale));
+  }
+
+  .space-details__title {
+    font-size: 1.3rem;
+  }
+
+  .space-details__sub {
+    font-size: 0.95rem;
+  }
+
+  .space-details__desc {
+    font-size: 0.95rem;
+  }
+
+  .space-details__count-value {
+    font-size: 3rem;
+  }
+
+  .space-details__actions {
+    grid-template-columns: repeat(2, 1fr);
+    gap: calc(10px * var(--font-scale));
+  }
+
+  .space-details__actions button {
+    min-height: calc(52px * var(--font-scale));
+    font-size: 1.1rem;
+  }
+
+  .camera-feed__viewport {
+    aspect-ratio: 16 / 10;
+  }
+
+  .camera-feed__label {
+    font-size: 0.9rem;
+  }
+
+  .camera-feed__reconnect {
+    font-size: 0.9rem;
+    padding: 0 calc(12px * var(--font-scale));
+  }
+
+  .app-footer {
+    flex-direction: column;
+    gap: calc(4px * var(--font-scale));
+    font-size: 0.8rem;
+    text-align: center;
+  }
+}
+
+/* Small mobile (max-width: 480px) */
+@media (max-width: 480px) {
+  .app-shell {
+    padding: calc(8px * var(--font-scale)) calc(8px * var(--font-scale))
+      calc(20px * var(--font-scale));
+  }
+
+  .topbar {
+    padding: calc(12px * var(--font-scale));
+  }
+
+  .topbar__title {
+    font-size: 1.15rem;
+  }
+
+  .zone-chip {
+    padding: 0 calc(10px * var(--font-scale));
+    font-size: 0.9rem;
+  }
+
+  .zone-chip__count {
+    font-size: 0.85rem;
+    padding: 2px 8px;
+  }
+
+  .space-details__count {
+    padding: calc(12px * var(--font-scale)) calc(14px * var(--font-scale));
+  }
+
+  .space-details__count-value {
+    font-size: 2.5rem;
+  }
+
+  .space-details__actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .space-details__actions button {
+    min-height: calc(48px * var(--font-scale));
+    font-size: 1rem;
+  }
+
+  .camera-feed__viewport {
+    aspect-ratio: 4 / 3;
+  }
+}
+
+/* Safe area insets for notched phones */
+@supports (padding: env(safe-area-inset-top)) {
+  .app-shell {
+    padding-left: calc(
+      max(12px, env(safe-area-inset-left)) * var(--font-scale)
+    );
+    padding-right: calc(
+      max(12px, env(safe-area-inset-right)) * var(--font-scale)
+    );
+  }
+
+  .space-details {
+    padding-bottom: calc(
+      max(16px, env(safe-area-inset-bottom)) * var(--font-scale)
+    );
+  }
+}
+
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   .camera-feed__dot {
@@ -737,7 +1112,16 @@
   .zone-bg,
   .space__rect,
   .zone-chip,
-  .font-toggle__btn {
+  .font-toggle__btn,
+  .space-details {
     transition: none;
+  }
+  @keyframes sheet-slide-up {
+    from {
+      transform: none;
+    }
+    to {
+      transform: none;
+    }
   }
 }
