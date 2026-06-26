@@ -11,6 +11,47 @@ type FloorPlanMapProps = {
   onSelectZone: (zone: ZoneId | null) => void
 }
 
+const ZONE_LABEL_KO: Record<ZoneId, string> = {
+  learning: '학습 · 상담',
+  leisure: '여가 · 체험',
+  health: '건강 · 운동',
+  cognitive: '인지 · 여가',
+}
+
+/**
+ * Wrap a Korean title into one or two lines so it fits inside narrow
+ * tiles. Spaces are kept as natural break points first; if no space
+ * exists in the title we just emit the original text on a single line.
+ */
+function wrapTitle(text: string, narrow: boolean): string[] {
+  // For wide tiles just emit the title as-is and let the SVG
+  // handle overflow (titles like "해피테이블, 멀티키움 등" are 11
+  // chars but the tile is 300px wide, so they fit).
+  if (!narrow) return [text]
+  // Narrow tiles: prefer a natural break at a space or comma.
+  const preferMid = Math.ceil(text.length / 2)
+  for (let i = preferMid - 2; i <= preferMid + 2; i++) {
+    if (i > 0 && i < text.length - 1) {
+      const ch = text[i]
+      if (ch === ' ' || ch === ',' || ch === '·') {
+        return [text.slice(0, i), text.slice(i + 1)]
+      }
+    }
+  }
+  // No natural break — split at the midpoint so long single-word
+  // titles ("AI 포토 키오스크") fit in the narrow 70px tile.
+  return [text.slice(0, preferMid), text.slice(preferMid)]
+}
+
+/**
+ * Floor plan SVG.
+ *
+ * Accessibility notes:
+ * - Each space is a real <button> with role/tabindex/aria-label.
+ * - The number badge and people count are rendered as SVG <text> so
+ *   screen-readers can read them; the whole tile is the click target.
+ * - Tile text size scales with the global font-scale variable.
+ */
 export function FloorPlanMap({
   floor,
   countFor,
@@ -44,8 +85,8 @@ export function FloorPlanMap({
             x2="0"
             y2="1"
           >
-            <stop offset="0%" stopColor={z.color} stopOpacity="0.32" />
-            <stop offset="100%" stopColor={z.color} stopOpacity="0.10" />
+            <stop offset="0%" stopColor={z.color} stopOpacity="0.22" />
+            <stop offset="100%" stopColor={z.color} stopOpacity="0.08" />
           </linearGradient>
         ))}
       </defs>
@@ -56,11 +97,32 @@ export function FloorPlanMap({
         y={10}
         width={viewbox.width - 20}
         height={viewbox.height - 20}
-        rx={14}
+        rx={16}
         className="floor-map__outline"
       />
 
-      {/* Zone backgrounds (group click clears the selected space) */}
+      {/* Compass edge markers (top/bottom/left/right) */}
+      <g className="compass-group" pointerEvents="none">
+        {([
+          ['▲', viewbox.width / 2, 4],
+          ['▼', viewbox.width / 2, viewbox.height - 4],
+          ['◀', 4, viewbox.height / 2],
+          ['▶', viewbox.width - 4, viewbox.height / 2],
+        ] as const).map(([glyph, cx, cy]) => (
+          <text
+            key={glyph + cx + cy}
+            x={cx}
+            y={cy}
+            className="compass__glyph"
+            textAnchor="middle"
+            dominantBaseline="middle"
+          >
+            {glyph}
+          </text>
+        ))}
+      </g>
+
+      {/* Zone backgrounds (click to filter; click again to clear) */}
       {zones.map((z) => {
         const spacesInZone = spaces.filter((s) => s.zone === z.id)
         if (spacesInZone.length === 0) return null
@@ -69,20 +131,32 @@ export function FloorPlanMap({
         const maxX = Math.max(...spacesInZone.map((s) => s.x + s.width))
         const maxY = Math.max(...spacesInZone.map((s) => s.y + s.height))
         const isDimmed = selectedZone !== null && selectedZone !== z.id
+        const isActive = selectedZone === z.id
+        const labelX = minX + 14
+        const labelY = minY + 22
         return (
-          <g
-            key={`zone-bg-${z.id}`}
-            className={`zone-bg ${isDimmed ? 'is-dimmed' : ''} ${selectedZone === z.id ? 'is-active' : ''}`}
-            onClick={() => onSelectZone(selectedZone === z.id ? null : z.id)}
-          >
-            <rect
-              x={minX - 8}
-              y={minY - 8}
-              width={maxX - minX + 16}
-              height={maxY - minY + 16}
-              rx={10}
-              fill={`url(#zone-grad-${z.id})`}
-            />
+          <g key={`zone-bg-${z.id}`}>
+            <g
+              className={`zone-bg ${isDimmed ? 'is-dimmed' : ''} ${isActive ? 'is-active' : ''}`}
+              onClick={() => onSelectZone(isActive ? null : z.id)}
+            >
+              <rect
+                x={minX - 10}
+                y={minY - 10}
+                width={maxX - minX + 20}
+                height={maxY - minY + 20}
+                rx={14}
+                fill={`url(#zone-grad-${z.id})`}
+              />
+            </g>
+            <text
+              x={labelX}
+              y={labelY}
+              className="zone-bg-label"
+              style={{ fill: z.color }}
+            >
+              {ZONE_LABEL_KO[z.id]}
+            </text>
           </g>
         )
       })}
@@ -94,6 +168,15 @@ export function FloorPlanMap({
           selectedZone !== null && space.zone !== selectedZone
         const count = countFor(space.id)
         const zoneColor = zoneById.get(space.zone) ?? '#1f6feb'
+        const isNarrow = space.width < 110
+        // Title is placed in the *center of the available area* between
+        // the badge (top) and the count pill (bottom), so neither
+        // overlaps it. We bias it slightly upward for narrow tiles
+        // where the title wraps to two lines.
+        const badgeBottom = space.y + 28 + (isNarrow ? 14 : 22) + 8
+        const pillTop = space.y + space.height - (isNarrow ? 18 : 26) - 14 - 8
+        const titleX = space.x + space.width / 2
+        const titleY = (badgeBottom + pillTop) / 2 + (isNarrow ? 18 : 8)
         return (
           <g
             key={space.id}
@@ -103,7 +186,7 @@ export function FloorPlanMap({
             onClick={() => onSelectSpace(space)}
             role="button"
             tabIndex={0}
-            aria-label={`${space.title_ko} (${count}명)`}
+            aria-label={`${space.title_ko} ${count}명`}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
@@ -117,79 +200,84 @@ export function FloorPlanMap({
               y={space.y}
               width={space.width}
               height={space.height}
-              rx={6}
+              rx={8}
               className="space__rect"
             />
-            <foreignObject
-              x={space.x + 4}
-              y={space.y + space.height - 24}
-              width={Math.max(space.width - 8, 50)}
-              height={20}
-            >
-              <div
-                className={
-                  space.width < 100
-                    ? 'space__title space__title--narrow'
-                    : 'space__title'
-                }
-              >
-                {space.title_ko}
-              </div>
-            </foreignObject>
 
-            {/* Numbered badge + count */}
-            {space.badge_anchor && (
-              <g
-                transform={`translate(${space.badge_anchor[0]}, ${space.badge_anchor[1]})`}
-                className={`badge ${space.width < 100 ? 'badge--compact' : ''}`}
+            {/* Number badge — top-left corner of the tile */}
+            <g
+              transform={`translate(${space.x + (isNarrow ? 18 : 28)}, ${space.y + (isNarrow ? 20 : 28)})`}
+              className={isNarrow ? 'badge badge--compact' : 'badge'}
+            >
+              <circle r={isNarrow ? 14 : 22} className="badge__bg" />
+              <text
+                className="badge__num"
+                textAnchor="middle"
+                dominantBaseline="central"
               >
-                <circle
-                  r={space.width < 100 ? 16 : 26}
-                  className="badge__bg"
-                />
-                <text
-                  className="badge__num"
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  style={{
-                    fontSize: space.width < 100 ? 14 : 22,
-                  }}
+                {space.id}
+              </text>
+            </g>
+
+            {/* Title — vertically centered between the badge (top) and
+                the count pill (bottom). Wraps to two lines for narrow
+                tiles. */}
+            <text
+              x={titleX}
+              y={titleY}
+              className={
+                isNarrow
+                  ? 'space__title space__title--narrow'
+                  : 'space__title'
+              }
+              textAnchor="middle"
+            >
+              {wrapTitle(space.title_ko, isNarrow).map((line, i) => (
+                <tspan
+                  key={i}
+                  x={titleX}
+                  dy={i === 0 ? 0 : '1.05em'}
                 >
-                  {space.id}
-                </text>
-                {space.width >= 100 && (
-                  <g transform="translate(20, 22)">
-                    <rect
-                      x={-2}
-                      y={-12}
-                      width={48}
-                      height={24}
-                      rx={12}
-                      className="badge__count-bg"
-                    />
-                    <text
-                      className="badge__count"
-                      x={22}
-                      y={0}
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                    >
-                      {count}명
-                    </text>
-                  </g>
-                )}
-                {space.width < 100 && (
-                  <text
-                    className="badge__count badge__count--inline"
-                    x={0}
-                    y={space.width < 100 ? 30 : 0}
-                    textAnchor="middle"
-                  >
-                    {count}명
-                  </text>
-                )}
-              </g>
+                  {line}
+                </tspan>
+              ))}
+            </text>
+
+            {/* English sub-label (only for wide enough tiles) */}
+            {!isNarrow && (
+              <text
+                x={titleX}
+                y={titleY + 22}
+                className="space__sub"
+                textAnchor="middle"
+              >
+                {space.title_en}
+              </text>
             )}
+
+            {/* People count pill — bottom-right of the tile */}
+            <g
+              transform={`translate(${space.x + space.width - (isNarrow ? 24 : 36)}, ${space.y + space.height - (isNarrow ? 18 : 26)})`}
+              className={isNarrow ? 'count-pill count-pill--compact' : 'count-pill'}
+            >
+              <rect
+                x={-2}
+                y={-14}
+                width={isNarrow ? 42 : 64}
+                height={28}
+                rx={14}
+                className="count-pill__bg"
+              />
+              <text
+                className="count-pill__num"
+                x={isNarrow ? 19 : 30}
+                y={0}
+                textAnchor="middle"
+                dominantBaseline="central"
+              >
+                {count}명
+              </text>
+            </g>
           </g>
         )
       })}

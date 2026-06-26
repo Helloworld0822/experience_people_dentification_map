@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
 
 import { useFloor } from '../hooks/useFloor'
+import { useFontScale } from '../hooks/useFontScale'
 import { formatClock, relativeAgo } from '../utils/formatFloor'
 import type { ZoneId } from '../types/floor'
 import { ErrorMessage } from './ErrorMessage'
 import { FloorPlanMap } from './FloorPlanMap'
+import { FontSizeToggle } from './FontSizeToggle'
 import { SpaceDetails } from './SpaceDetails'
 import { ZoneLegend } from './ZoneLegend'
 
@@ -22,6 +24,7 @@ export function FloorDashboard() {
     refresh,
   } = useFloor()
   const [selectedZone, setSelectedZone] = useState<ZoneId | null>(null)
+  const { scale, setScale } = useFontScale()
 
   const totalsByZone = useMemo(() => {
     const out: Record<ZoneId, number> = {
@@ -65,6 +68,7 @@ export function FloorDashboard() {
           <p className="eyebrow">체험형 인지건강센터 · 실시간 인원</p>
           <h1 className="topbar__title">경험관 평면도</h1>
         </div>
+        <FontSizeToggle value={scale} onChange={setScale} />
         <div className="topbar__meta">
           <div className="topbar__stat">
             <p className="eyebrow">총 인원</p>
@@ -122,7 +126,7 @@ export function FloorDashboard() {
       <ErrorMessage message={error} />
 
       <footer className="app-footer">
-        <span>API: {import.meta.env.VITE_API_BASE_URL || '/api (vite proxy)'}</span>
+        <span>API: {import.meta.env.VITE_API_BASE_URL || '/api (프록시)'}</span>
         <span>· 5초마다 자동 갱신</span>
       </footer>
     </main>

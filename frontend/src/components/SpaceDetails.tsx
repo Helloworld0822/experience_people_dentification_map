@@ -55,7 +55,7 @@ export function SpaceDetails({
         </p>
       </div>
 
-      <div className="space-details__actions">
+      <div className="space-details__actions" role="group" aria-label="인원 수 조정">
         <button type="button" onClick={() => void onBump(-1)}>
           −1
         </button>
