@@ -178,7 +178,6 @@ export function FloorDashboard() {
 
       <footer className="app-footer">
         <span>서울디지털동행플라자 스마트 안내 시스템</span>
-        <span>5초마다 자동 갱신</span>
       </footer>
     </main>
   )
