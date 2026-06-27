@@ -11,11 +11,44 @@ type FloorPlanMapProps = {
   onSelectZone: (zone: ZoneId | null) => void
 }
 
-const ZONE_LABEL_KO: Record<ZoneId, string> = {
-  learning: '학습 · 상담',
-  leisure: '여가 · 체험',
-  health: '건강 · 운동',
-  cognitive: '인지 · 여가',
+type TileLayout = {
+  x: number
+  y: number
+  width: number
+  height: number
+  compact?: boolean
+}
+
+const MAP_VIEWBOX = {
+  width: 1000,
+  height: 780,
+}
+
+const STITCH_ZONE_COLORS: Record<ZoneId, string> = {
+  learning: '#1565c0',
+  leisure: '#fbc02d',
+  health: '#689f38',
+  cognitive: '#d81b60',
+}
+
+const STITCH_ZONE_TINTS: Record<ZoneId, string> = {
+  learning: '#e3f2fd',
+  leisure: '#fff9c4',
+  health: '#f1f8e9',
+  cognitive: '#fce4ec',
+}
+
+const TILE_LAYOUTS: Record<number, TileLayout> = {
+  1: { x: 40, y: 40, width: 280, height: 200 },
+  2: { x: 40, y: 260, width: 280, height: 390 },
+  3: { x: 360, y: 40, width: 280, height: 200 },
+  4: { x: 360, y: 260, width: 280, height: 390 },
+  5: { x: 680, y: 40, width: 280, height: 200 },
+  6: { x: 680, y: 260, width: 280, height: 210 },
+  7: { x: 680, y: 490, width: 130, height: 75, compact: true },
+  8: { x: 830, y: 490, width: 130, height: 75, compact: true },
+  9: { x: 680, y: 575, width: 130, height: 75, compact: true },
+  10: { x: 830, y: 575, width: 130, height: 75, compact: true },
 }
 
 /**
@@ -55,124 +88,64 @@ export function FloorPlanMap({
   onSelectSpace,
   onSelectZone,
 }: FloorPlanMapProps) {
-  const { viewbox, spaces, zones } = floor
-  const zoneById = useMemo(() => {
+  const { spaces, zones } = floor
+  const zoneColorById = useMemo(() => {
     const m = new Map<ZoneId, string>()
-    zones.forEach((z) => m.set(z.id, z.color))
+    zones.forEach((z) => m.set(z.id, STITCH_ZONE_COLORS[z.id] ?? z.color))
     return m
   }, [zones])
+  const toggleZone = (zoneId: ZoneId) => {
+    onSelectZone(selectedZone === zoneId ? null : zoneId)
+  }
 
   return (
     <svg
       className="floor-map"
-      viewBox={`0 0 ${viewbox.width} ${viewbox.height}`}
+      viewBox={`0 0 ${MAP_VIEWBOX.width} ${MAP_VIEWBOX.height}`}
       role="img"
       aria-label="경험관 평면도"
       preserveAspectRatio="xMidYMid meet"
       style={{ touchAction: 'pan-x pinch-zoom' }}
     >
       <defs>
-        {zones.map((z) => (
-          <linearGradient
-            key={`grad-${z.id}`}
-            id={`zone-grad-${z.id}`}
-            x1="0"
-            y1="0"
-            x2="0"
-            y2="1"
-          >
-            <stop offset="0%" stopColor={z.color} stopOpacity="0.22" />
-            <stop offset="100%" stopColor={z.color} stopOpacity="0.08" />
-          </linearGradient>
-        ))}
+        <filter id="room-card-shadow" x="-10%" y="-10%" width="120%" height="120%">
+          <feDropShadow dx="0" dy="10" stdDeviation="14" floodOpacity="0.08" />
+        </filter>
       </defs>
 
       {/* Outer building outline */}
       <rect
         x={10}
         y={10}
-        width={viewbox.width - 20}
-        height={viewbox.height - 20}
-        rx={16}
+        width={MAP_VIEWBOX.width - 20}
+        height={690}
+        rx={2}
         className="floor-map__outline"
       />
 
-      {/* Compass edge markers (top/bottom/left/right) */}
-      <g className="compass-group" pointerEvents="none">
-        {([
-          ['▲', viewbox.width / 2, 4],
-          ['▼', viewbox.width / 2, viewbox.height - 4],
-          ['◀', 4, viewbox.height / 2],
-          ['▶', viewbox.width - 4, viewbox.height / 2],
-        ] as const).map(([glyph, cx, cy]) => (
-          <text
-            key={glyph + cx + cy}
-            x={cx}
-            y={cy}
-            className="compass__glyph"
-            textAnchor="middle"
-            dominantBaseline="middle"
-          >
-            {glyph}
-          </text>
-        ))}
-      </g>
-
-      {/* Zone backgrounds (click to filter; click again to clear) */}
-      {zones.map((z) => {
-        const spacesInZone = spaces.filter((s) => s.zone === z.id)
-        if (spacesInZone.length === 0) return null
-        const minX = Math.min(...spacesInZone.map((s) => s.x))
-        const minY = Math.min(...spacesInZone.map((s) => s.y))
-        const maxX = Math.max(...spacesInZone.map((s) => s.x + s.width))
-        const maxY = Math.max(...spacesInZone.map((s) => s.y + s.height))
-        const isDimmed = selectedZone !== null && selectedZone !== z.id
-        const isActive = selectedZone === z.id
-        const labelX = minX + 14
-        const labelY = minY + 22
-        return (
-          <g key={`zone-bg-${z.id}`}>
-            <g
-              className={`zone-bg ${isDimmed ? 'is-dimmed' : ''} ${isActive ? 'is-active' : ''}`}
-              onClick={() => onSelectZone(isActive ? null : z.id)}
-            >
-              <rect
-                x={minX - 10}
-                y={minY - 10}
-                width={maxX - minX + 20}
-                height={maxY - minY + 20}
-                rx={14}
-                fill={`url(#zone-grad-${z.id})`}
-              />
-            </g>
-            <text
-              x={labelX}
-              y={labelY}
-              className="zone-bg-label"
-              style={{ fill: z.color }}
-            >
-              {ZONE_LABEL_KO[z.id]}
-            </text>
-          </g>
-        )
-      })}
-
       {/* Spaces (clickable tiles) */}
       {spaces.map((space) => {
+        const layout = TILE_LAYOUTS[space.id] ?? {
+          x: space.x,
+          y: space.y,
+          width: space.width,
+          height: space.height,
+        }
         const isSelected = space.id === selectedSpaceId
         const isDimmed =
           selectedZone !== null && space.zone !== selectedZone
         const count = countFor(space.id)
-        const zoneColor = zoneById.get(space.zone) ?? '#1f6feb'
-        const isNarrow = space.width < 110
-        const badgeBottom = space.y + 28 + (isNarrow ? 14 : 22) + 8
-        const pillTop = space.y + space.height - (isNarrow ? 18 : 26) - 14 - 8
-        const titleX = space.x + space.width / 2
-        const titleY = (badgeBottom + pillTop) / 2 + (isNarrow ? 18 : 8)
+        const zoneColor = zoneColorById.get(space.zone) ?? '#1f6feb'
+        const zoneTint = STITCH_ZONE_TINTS[space.zone] ?? '#ffffff'
+        const isCompact = layout.compact === true
+        const titleX = layout.x + layout.width / 2
+        const titleY = isCompact
+          ? layout.y + layout.height / 2 + 5
+          : layout.y + layout.height / 2 + 7
         return (
           <g
             key={space.id}
-            className={`space ${isSelected ? 'is-selected' : ''} ${
+            className={`space room-tile ${isCompact ? 'room-tile--compact' : ''} ${isSelected ? 'is-selected' : ''} ${
               isDimmed ? 'is-dimmed' : ''
             }`}
             onClick={() => onSelectSpace(space)}
@@ -185,23 +158,33 @@ export function FloorPlanMap({
                 onSelectSpace(space)
               }
             }}
-            style={{ ['--space-color' as never]: zoneColor }}
+            style={{
+              ['--space-color' as never]: zoneColor,
+              ['--space-tint' as never]: zoneTint,
+            }}
           >
             <rect
-              x={space.x}
-              y={space.y}
-              width={space.width}
-              height={space.height}
-              rx={8}
+              x={layout.x}
+              y={layout.y}
+              width={layout.width}
+              height={layout.height}
+              rx={2}
               className="space__rect"
             />
 
-            {/* Number badge — top-left corner of the tile */}
+            {/* Number badge */}
             <g
-              transform={`translate(${space.x + (isNarrow ? 18 : 28)}, ${space.y + (isNarrow ? 20 : 28)})`}
-              className={isNarrow ? 'badge badge--compact' : 'badge'}
+              transform={`translate(${layout.x + (isCompact ? layout.width - 16 : 28)}, ${layout.y + (isCompact ? -2 : 28)})`}
+              className={isCompact ? 'badge badge--compact badge--floating' : 'badge'}
             >
-              <circle r={isNarrow ? 14 : 22} className="badge__bg" />
+              <rect
+                x={isCompact ? -10 : -14}
+                y={isCompact ? -10 : -14}
+                width={isCompact ? 20 : 28}
+                height={isCompact ? 20 : 28}
+                rx={isCompact ? 10 : 2}
+                className="badge__bg"
+              />
               <text
                 className="badge__num"
                 textAnchor="middle"
@@ -211,18 +194,25 @@ export function FloorPlanMap({
               </text>
             </g>
 
+            {!isCompact && (
+              <text
+                x={titleX}
+                y={titleY - 46}
+                className="room-tile__icon"
+                textAnchor="middle"
+              >
+                {space.id.toString().padStart(2, '0')}
+              </text>
+            )}
+
             {/* Title */}
             <text
               x={titleX}
               y={titleY}
-              className={
-                isNarrow
-                  ? 'space__title space__title--narrow'
-                  : 'space__title'
-              }
+              className={isCompact ? 'space__title space__title--narrow' : 'space__title'}
               textAnchor="middle"
             >
-              {wrapTitle(space.title_ko, isNarrow).map((line, i) => (
+              {wrapTitle(space.title_ko, isCompact).map((line, i) => (
                 <tspan
                   key={i}
                   x={titleX}
@@ -234,10 +224,10 @@ export function FloorPlanMap({
             </text>
 
             {/* English sub-label (only for wide enough tiles) */}
-            {!isNarrow && (
+            {!isCompact && (
               <text
                 x={titleX}
-                y={titleY + 22}
+                y={titleY + 28}
                 className="space__sub"
                 textAnchor="middle"
               >
@@ -247,20 +237,20 @@ export function FloorPlanMap({
 
             {/* People count pill — bottom-right of the tile */}
             <g
-              transform={`translate(${space.x + space.width - (isNarrow ? 26 : 40)}, ${space.y + space.height - (isNarrow ? 20 : 30)})`}
-              className={isNarrow ? 'count-pill count-pill--compact' : 'count-pill'}
+              transform={`translate(${layout.x + layout.width - (isCompact ? 42 : 78)}, ${layout.y + (isCompact ? layout.height - 12 : layout.height - 30)})`}
+              className={isCompact ? 'count-pill count-pill--compact' : 'count-pill'}
             >
               <rect
-                x={-2}
-                y={-16}
-                width={isNarrow ? 48 : 74}
-                height={32}
-                rx={16}
+                x={0}
+                y={isCompact ? -10 : -16}
+                width={isCompact ? 44 : 74}
+                height={isCompact ? 20 : 32}
+                rx={isCompact ? 10 : 16}
                 fill={zoneColor}
               />
               <text
                 className="count-pill__num"
-                x={isNarrow ? 22 : 35}
+                x={isCompact ? 22 : 37}
                 y={0}
                 textAnchor="middle"
                 dominantBaseline="central"
@@ -273,7 +263,7 @@ export function FloorPlanMap({
       })}
 
       {/* Entrance marker */}
-      <g className="entrance" transform="translate(495, 590)">
+      <g className="entrance" transform="translate(500, 710)">
         <text
           textAnchor="middle"
           className="entrance__label"
@@ -285,6 +275,44 @@ export function FloorPlanMap({
           d="M -10 0 L 10 0 L 0 -10 Z"
           className="entrance__arrow"
         />
+      </g>
+
+      <g className="map-legend" transform="translate(175, 740)">
+        {zones.map((zone, index) => {
+          const x = index * 190
+          const isActive = selectedZone === zone.id
+          return (
+            <g
+              key={zone.id}
+              transform={`translate(${x}, 0)`}
+              className={`map-legend__item ${isActive ? 'is-active' : ''}`}
+              role="button"
+              tabIndex={0}
+              aria-label={`${zone.label_ko} 영역 필터`}
+              aria-pressed={isActive}
+              onClick={() => toggleZone(zone.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  toggleZone(zone.id)
+                }
+              }}
+            >
+              <rect
+                x={0}
+                y={-8}
+                width={16}
+                height={16}
+                rx={2}
+                fill={STITCH_ZONE_TINTS[zone.id]}
+                stroke={zoneColorById.get(zone.id)}
+              />
+              <text x={26} y={4} className="map-legend__label">
+                {zone.label_ko}
+              </text>
+            </g>
+          )
+        })}
       </g>
     </svg>
   )

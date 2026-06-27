@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&display=swap');
+
 /* ============================================================
    Base styles — Seoul Digital Companion Plaza
    Design guide: design.md (서울디지털동행플라자)
@@ -9,31 +11,32 @@
 
 :root {
   /* ---- Seoul Brand Colors ---- */
-  --seoul-blue: #0047A0;
-  --seoul-blue-light: #1A6DC8;
-  --seoul-blue-dark: #003380;
+  --seoul-blue: #1c1b1b;
+  --seoul-blue-light: #474746;
+  --seoul-blue-dark: #000000;
 
   /* ---- Functional Colors ---- */
-  --color-success: #1A6E44;
-  --color-success-bg: #E6F4ED;
-  --color-warning: #C47900;
-  --color-warning-bg: #FEF6E4;
+  --color-success: #2f7d32;
+  --color-success-bg: #eef7ee;
+  --color-warning: #695f00;
+  --color-warning-bg: #fff9c4;
   --color-danger: #C0392B;
   --color-danger-bg: #FDECEA;
-  --color-info: #0047A0;
-  --color-info-bg: #E8F0FB;
+  --color-info: #1c1b1b;
+  --color-info-bg: #eeeeee;
 
   /* ---- Neutral Colors ---- */
   --color-text: #1A1A1A;
   --color-text-secondary: #4A4A4A;
   --color-text-disabled: #8A8A8A;
-  --color-bg: #F5F5F0;
+  --color-bg: #f9f9f9;
   --color-surface: #FFFFFF;
-  --color-border: #D9D9D9;
+  --color-border: #c4c7c7;
+  --color-highlight: #f9e534;
 
   /* ---- Typography ---- */
-  --font-display: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-  --font-body: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-display: 'Hanken Grotesk', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-body: 'Hanken Grotesk', 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
 
   /* ---- Type Scale (px) ---- */
   --text-display: 36px;
@@ -64,19 +67,19 @@
   --space-16: 64px;
 
   /* ---- Border Radius ---- */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-full: 9999px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 12px;
 
   /* ---- Shadows ---- */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 18px 54px rgba(0, 0, 0, 0.12);
 
   /* ---- Focus Ring ---- */
-  --focus-ring: 0 0 0 3px #FFFFFF, 0 0 0 6px var(--seoul-blue);
+  --focus-ring: 0 0 0 2px #FFFFFF, 0 0 0 5px var(--seoul-blue);
 
   /* ---- Font Scale (accessibility toggle) ---- */
   --font-scale: 1;
