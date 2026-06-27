@@ -256,7 +256,7 @@ export function FloorPlanMap({
                 width={isNarrow ? 48 : 74}
                 height={32}
                 rx={16}
-                className="count-pill__bg"
+                fill={zoneColor}
               />
               <text
                 className="count-pill__num"
