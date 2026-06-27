@@ -388,22 +388,26 @@
   font-size: calc(14px * var(--font-scale));
 }
 
-/* People count pill */
+/* People count pill — large, high-contrast */
 .count-pill {
-  fill: var(--color-surface);
-  stroke: var(--space-color);
-  stroke-width: 2;
+  fill: var(--space-color);
+  stroke: var(--color-surface);
+  stroke-width: 3;
 }
 
 .count-pill__num {
-  fill: var(--space-color);
-  font-size: calc(14px * var(--font-scale));
+  fill: #FFFFFF;
+  font-size: calc(18px * var(--font-scale));
   font-weight: 700;
   font-family: inherit;
 }
 
+.count-pill--compact .badge__bg {
+  stroke-width: 2;
+}
+
 .count-pill--compact .count-pill__num {
-  font-size: calc(10px * var(--font-scale));
+  font-size: calc(13px * var(--font-scale));
 }
 
 /* Entrance marker */

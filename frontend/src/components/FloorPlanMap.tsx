@@ -247,20 +247,20 @@ export function FloorPlanMap({
 
             {/* People count pill — bottom-right of the tile */}
             <g
-              transform={`translate(${space.x + space.width - (isNarrow ? 24 : 36)}, ${space.y + space.height - (isNarrow ? 18 : 26)})`}
+              transform={`translate(${space.x + space.width - (isNarrow ? 26 : 40)}, ${space.y + space.height - (isNarrow ? 20 : 30)})`}
               className={isNarrow ? 'count-pill count-pill--compact' : 'count-pill'}
             >
               <rect
                 x={-2}
-                y={-14}
-                width={isNarrow ? 42 : 64}
-                height={28}
-                rx={14}
+                y={-16}
+                width={isNarrow ? 48 : 74}
+                height={32}
+                rx={16}
                 className="count-pill__bg"
               />
               <text
                 className="count-pill__num"
-                x={isNarrow ? 19 : 30}
+                x={isNarrow ? 22 : 35}
                 y={0}
                 textAnchor="middle"
                 dominantBaseline="central"
