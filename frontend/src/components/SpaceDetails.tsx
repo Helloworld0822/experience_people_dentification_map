@@ -13,12 +13,10 @@ type SpaceDetailsProps = {
 }
 
 /**
- * Space details side panel.
+ * Space details panel.
  *
- * On desktop (>768px): renders as a sticky sidebar.
- * On mobile (<=768px): renders as a full-screen overlay with a
- *   bottom-sheet style, backdrop, and swipe-down handle. The
- *   backdrop tap closes the panel. Escape key also closes it.
+ * Desktop: sticky sidebar.
+ * Mobile/Tablet: bottom sheet with backdrop, swipe handle, Escape close.
  */
 export function SpaceDetails({
   space,
@@ -39,7 +37,7 @@ export function SpaceDetails({
     return () => document.removeEventListener('keydown', handler)
   }, [space, onClose])
 
-  // Focus trap: focus the panel when it opens
+  // Focus trap
   useEffect(() => {
     if (space && panelRef.current) {
       panelRef.current.focus()

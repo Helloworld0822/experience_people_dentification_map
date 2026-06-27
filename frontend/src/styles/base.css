@@ -1,30 +1,114 @@
+/* ============================================================
+   Base styles — Seoul Digital Companion Plaza
+   Design guide: design.md (서울디지털동행플라자)
+   ============================================================ */
+
 * {
   box-sizing: border-box;
 }
 
 :root {
-  color: #0f172a;
-  background: #f6f8fb;
-  font-family:
-    "Noto Sans KR", Inter, ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic",
-    sans-serif;
+  /* ---- Seoul Brand Colors ---- */
+  --seoul-blue: #0047A0;
+  --seoul-blue-light: #1A6DC8;
+  --seoul-blue-dark: #003380;
+
+  /* ---- Functional Colors ---- */
+  --color-success: #1A6E44;
+  --color-success-bg: #E6F4ED;
+  --color-warning: #C47900;
+  --color-warning-bg: #FEF6E4;
+  --color-danger: #C0392B;
+  --color-danger-bg: #FDECEA;
+  --color-info: #0047A0;
+  --color-info-bg: #E8F0FB;
+
+  /* ---- Neutral Colors ---- */
+  --color-text: #1A1A1A;
+  --color-text-secondary: #4A4A4A;
+  --color-text-disabled: #8A8A8A;
+  --color-bg: #F5F5F0;
+  --color-surface: #FFFFFF;
+  --color-border: #D9D9D9;
+
+  /* ---- Typography ---- */
+  --font-display: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-body: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+
+  /* ---- Type Scale (px) ---- */
+  --text-display: 36px;
+  --text-h1: 28px;
+  --text-h2: 24px;
+  --text-h3: 20px;
+  --text-body-lg: 18px;
+  --text-body: 16px;
+  --text-label: 16px;
+  --text-caption: 14px;
+
+  /* ---- Line Heights ---- */
+  --leading-tight: 1.3;
+  --leading-snug: 1.5;
+  --leading-normal: 1.7;
+  --leading-loose: 1.8;
+
+  /* ---- Spacing (4px base) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---- Border Radius ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* ---- Shadows ---- */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
+
+  /* ---- Focus Ring ---- */
+  --focus-ring: 0 0 0 3px #FFFFFF, 0 0 0 6px var(--seoul-blue);
+
+  /* ---- Font Scale (accessibility toggle) ---- */
+  --font-scale: 1;
+  font-size: calc(16px * var(--font-scale));
+
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-family: var(--font-body);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+[data-font-scale='large'] {
+  --font-scale: 1.19;
+}
+
+[data-font-scale='xlarge'] {
+  --font-scale: 1.38;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: linear-gradient(180deg, #eef2f7 0%, #f6f8fb 100%);
+  background: var(--color-bg);
 }
 
 button {
   font: inherit;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -33,18 +117,29 @@ button:disabled {
   opacity: 0.55;
 }
 
-h1,
-h2,
-h3,
-p {
+h1, h2, h3, p {
   margin: 0;
 }
 
+/* ---- Eyebrow label ---- */
 .eyebrow {
   margin: 0;
-  color: #475569;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+/* ---- Utility: sr-only ---- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }

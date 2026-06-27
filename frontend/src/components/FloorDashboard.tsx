@@ -43,7 +43,18 @@ export function FloorDashboard() {
   if (isLoading && !floor) {
     return (
       <main className="app-shell">
-        <p className="loading">평면도 데이터를 불러오는 중…</p>
+        <div className="topbar">
+          <div className="topbar__brand">
+            <div className="topbar__logo" aria-hidden>서울</div>
+            <div>
+              <h1 className="topbar__title">경험관 평면도</h1>
+              <p className="topbar__subtitle">서울디지털동행플라자</p>
+            </div>
+          </div>
+        </div>
+        <p className="loading" role="status">
+          <span aria-hidden="true">⏳</span> 잠깐만 기다려 주세요…
+        </p>
       </main>
     )
   }
@@ -51,7 +62,16 @@ export function FloorDashboard() {
   if (!floor) {
     return (
       <main className="app-shell">
-        <ErrorMessage message={error ?? '데이터를 불러올 수 없습니다.'} />
+        <div className="topbar">
+          <div className="topbar__brand">
+            <div className="topbar__logo" aria-hidden>서울</div>
+            <div>
+              <h1 className="topbar__title">경험관 평면도</h1>
+              <p className="topbar__subtitle">서울디지털동행플라자</p>
+            </div>
+          </div>
+        </div>
+        <ErrorMessage message={error ?? '데이터를 불러올 수 없습니다. 와이파이가 연결되어 있는지 확인해 주세요.'} />
       </main>
     )
   }
@@ -64,9 +84,12 @@ export function FloorDashboard() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div>
-          <p className="eyebrow">체험형 인지건강센터 · 실시간 인원</p>
-          <h1 className="topbar__title">경험관 평면도</h1>
+        <div className="topbar__brand">
+          <div className="topbar__logo" aria-hidden>서울</div>
+          <div>
+            <h1 className="topbar__title">경험관 평면도</h1>
+            <p className="topbar__subtitle">서울디지털동행플라자 · 실시간 인원</p>
+          </div>
         </div>
         <FontSizeToggle value={scale} onChange={setScale} />
         <div className="topbar__meta">
@@ -86,6 +109,7 @@ export function FloorDashboard() {
             className="topbar__refresh"
             onClick={() => void refresh()}
             disabled={isLoading}
+            aria-label="새로고침"
           >
             {isLoading ? '동기화 중…' : '새로고침'}
           </button>
@@ -126,8 +150,9 @@ export function FloorDashboard() {
       <ErrorMessage message={error} />
 
       <footer className="app-footer">
-        <span>API: {import.meta.env.VITE_API_BASE_URL || '/api (프록시)'}</span>
-        <span>· 5초마다 자동 갱신</span>
+        <span>서울디지털동행플라자</span>
+        <span>·</span>
+        <span>5초마다 자동 갱신</span>
       </footer>
     </main>
   )

@@ -41,13 +41,15 @@ impl Zone {
         }
     }
 
-    /// Theme color (matches the floor-plan illustration).
+    /// Theme color (Seoul Digital Companion Plaza design guide).
+    /// These are darker variants for high contrast on white backgrounds.
+    /// WCAG AAA compliant (7:1+ contrast ratio).
     pub const fn color(self) -> &'static str {
         match self {
-            Zone::Learning => "#1f6feb",  // blue
-            Zone::Leisure => "#d97706",   // orange
-            Zone::Health => "#1f8a3c",    // green
-            Zone::Cognitive => "#7c3aed", // purple
+            Zone::Learning => "#0047A0",  // Seoul Blue
+            Zone::Leisure => "#92400E",   // Amber dark
+            Zone::Health => "#166534",    // Green dark
+            Zone::Cognitive => "#5B21B6", // Purple dark
         }
     }
 }

@@ -6,9 +6,9 @@ type FontSizeToggleProps = {
 }
 
 const OPTIONS: Array<{ value: FontScale; label: string; hint: string }> = [
-  { value: 'base', label: '보통', hint: '기본 글자 크기' },
-  { value: 'large', label: '크게', hint: '글자 약 1.2배' },
-  { value: 'xlarge', label: '매우 크게', hint: '글자 약 1.4배' },
+  { value: 'base', label: '보통', hint: '기본 글자 크기 (16px)' },
+  { value: 'large', label: '크게', hint: '글자 약 1.2배 (19px)' },
+  { value: 'xlarge', label: '매우 크게', hint: '글자 약 1.4배 (22px)' },
 ]
 
 export function FontSizeToggle({ value, onChange }: FontSizeToggleProps) {
