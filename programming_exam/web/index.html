@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f4f7fb" />
+    <title>스마트 공간 혼잡도 관제</title>
+    <link rel="stylesheet" href="/static/styles.css?v=embedfix2" />
+  </head>
+  <body>
+    <header class="app-header">
+      <a class="brand" href="/" aria-label="스마트 공간 관제 홈">
+        <span class="brand-symbol" aria-hidden="true">
+          <i></i><i></i><i></i>
+        </span>
+        <span>
+          <strong>스마트 공간 실시간 혼잡도</strong>
+          <small>AI 기반 공간 이용 현황 모니터링 서비스</small>
+        </span>
+      </a>
+
+      <nav class="main-nav" aria-label="주 메뉴">
+        <button class="nav-item active" type="button"><span>▦</span> 대시보드</button>
+        <button class="nav-item" type="button"><span>▥</span> 구역 현황</button>
+        <button class="nav-item" type="button"><span>⌁</span> 운영 통계</button>
+        <button class="nav-item" type="button"><span>⚙</span> 설정</button>
+      </nav>
+
+      <div class="operation-status">
+        <span class="pulse-dot"></span>
+        <span id="serverStatus">실시간 운영 중</span>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="kpi-grid" aria-label="주요 운영 지표">
+        <article class="kpi-card">
+          <span class="kpi-icon blue" aria-hidden="true">♟</span>
+          <div>
+            <p>현재 방문객</p>
+            <strong>128<small>명</small></strong>
+            <span>전일 대비 <b class="up">↑ 12명 (10.3%)</b></span>
+          </div>
+        </article>
+        <article class="kpi-card">
+          <span class="kpi-icon orange" aria-hidden="true">♟</span>
+          <div>
+            <p>혼잡 구역</p>
+            <strong>2<small>곳</small></strong>
+            <span>전체 6개 구역 중</span>
+          </div>
+        </article>
+        <article class="kpi-card">
+          <span class="kpi-icon green" aria-hidden="true">◔</span>
+          <div>
+            <p>평균 이용률</p>
+            <strong>64<small>%</small></strong>
+            <span>전일 대비 <b class="up">↑ 6%p</b></span>
+          </div>
+        </article>
+        <article class="kpi-card">
+          <span class="kpi-icon purple" aria-hidden="true">↗</span>
+          <div>
+            <p>예상 대기 감소</p>
+            <strong>18<small>%</small></strong>
+            <span>AI 예측 기반 효과</span>
+          </div>
+        </article>
+      </section>
+
+      <section class="content-grid">
+        <article class="map-card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">LIVE FLOOR MAP</p>
+              <h1>강동센터 1층 구역 현황</h1>
+            </div>
+            <div class="map-meta">
+              <span class="status-dot ready" id="serverDot"></span>
+              <span id="modelName">YOLO26m 연결 중</span>
+            </div>
+          </div>
+
+          <div class="floorplan" id="floorplan">
+            <div class="map-stage" id="mapStage">
+              <svg id="floorSvg" viewBox="0 0 1000 620" role="img" aria-label="강동센터 1층 구역별 혼잡도 지도">
+                <defs>
+                  <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="4" stdDeviation="5" flood-opacity=".08"/>
+                  </filter>
+                  <pattern id="gridPattern" width="30" height="30" patternUnits="userSpaceOnUse">
+                    <path d="M 30 0 L 0 0 0 30" fill="none" stroke="#dce3ec" stroke-width=".6"/>
+                  </pattern>
+                </defs>
+
+                <rect x="12" y="12" width="976" height="596" rx="8" fill="url(#gridPattern)" opacity=".45"/>
+                <g id="dynamicZones"></g>
+              </svg>
+              <div id="cameraMarkers"></div>
+            </div>
+
+            <div class="map-controls" aria-label="지도 제어">
+              <button id="zoomIn" type="button" aria-label="지도 확대">＋</button>
+              <button id="zoomOut" type="button" aria-label="지도 축소">−</button>
+              <button id="resetMap" type="button" aria-label="지도 초기화">⌾</button>
+            </div>
+          </div>
+        </article>
+
+        <aside class="side-column">
+          <section class="panel zone-panel">
+            <div class="panel-heading">
+              <h2>실시간 구역 현황</h2>
+              <span>↻ <b id="updateAge">방금</b> 업데이트</span>
+            </div>
+            <div class="zone-table" role="table" aria-label="실시간 구역 현황">
+              <div class="zone-row table-header" role="row">
+                <span>구역명</span><span>인원</span><span>이용률</span><span>상태</span>
+              </div>
+              <div id="zoneRows"></div>
+            </div>
+            <button class="text-link" type="button">구역 현황 상세보기 ›</button>
+          </section>
+
+          <div class="small-panels">
+            <section class="panel legend-panel">
+              <h2>혼잡도 기준</h2>
+              <ul>
+                <li><i class="dot free"></i><span>0 ~ 30%</span><b>여유</b></li>
+                <li><i class="dot normal"></i><span>31 ~ 60%</span><b>보통</b></li>
+                <li><i class="dot busy"></i><span>61 ~ 80%</span><b>혼잡</b></li>
+                <li><i class="dot critical"></i><span>81 ~ 100%</span><b>매우 혼잡</b></li>
+              </ul>
+            </section>
+            <section class="panel insight-panel">
+              <h2>운영 인사이트</h2>
+              <div><span class="insight-icon red">▥</span><p><b>로봇 체험존 집중 시간대 감지</b><small>주말 14~16시 이용률 최고</small></p></div>
+              <div><span class="insight-icon green">☕</span><p><b>휴게 공간 여유 상태 유지</b><small>현재 쾌적한 이용 환경 유지 중</small></p></div>
+              <div><span class="insight-icon orange">♟</span><p><b>상담 공간 인원 재배치 권장</b><small>오후 시간대 대기 증가 예상</small></p></div>
+            </section>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <div class="camera-modal hidden" id="cameraModal" role="dialog" aria-modal="true" aria-labelledby="cameraTitle">
+      <div class="modal-backdrop" data-close-camera></div>
+      <section class="camera-dialog">
+        <header class="camera-header">
+          <div>
+            <p>YOLO26 LIVE CAMERA</p>
+            <h2 id="cameraTitle">구역 카메라</h2>
+          </div>
+          <button class="modal-close" data-close-camera type="button" aria-label="카메라 닫기">×</button>
+        </header>
+
+        <div class="camera-layout">
+          <div class="viewer" id="viewer">
+            <video id="video" autoplay muted playsinline></video>
+            <canvas id="overlay"></canvas>
+            <div class="empty-state" id="emptyState">
+              <span class="camera-outline">▣</span>
+              <h3>카메라가 대기 중입니다</h3>
+              <p>카메라 시작을 눌러 YOLO26 탐지를 실행하세요.</p>
+            </div>
+            <div class="live-badge hidden" id="liveBadge"><span></span> LIVE</div>
+            <div class="people-count hidden" id="peopleCount"><strong id="countValue">0</strong><span>PERSONS</span></div>
+            <div class="density-badge hidden" id="densityBadge"><span>밀집도</span><strong id="densityValue">0%</strong><em id="densityLevel">대기</em></div>
+          </div>
+
+          <aside class="camera-controls">
+            <button class="primary-button" id="cameraButton" type="button">
+              <span>▣</span><span id="cameraButtonText">카메라 시작</span>
+            </button>
+            <div class="setting">
+              <div><label for="confidence">탐지 신뢰도</label><output id="confidenceValue" for="confidence">25%</output></div>
+              <input id="confidence" type="range" min="10" max="85" value="25" />
+            </div>
+            <dl class="metrics">
+              <div><dt>모델</dt><dd id="cameraModelName">YOLO26m</dd></div>
+              <div><dt>연산 장치</dt><dd id="deviceName">확인 중</dd></div>
+              <div><dt>추론 시간</dt><dd id="latency">— ms</dd></div>
+              <div><dt>탐지 모드</dt><dd>밀집 타일</dd></div>
+              <div><dt>상태</dt><dd id="detectionStatus">대기</dd></div>
+            </dl>
+            <p class="privacy-note">1280px 영상을 겹치는 구역으로 나눠 작은 사람까지 탐지합니다. 영상은 저장되지 않습니다.</p>
+            <p class="error-message hidden" id="errorMessage" role="alert"></p>
+          </aside>
+        </div>
+      </section>
+    </div>
+
+    <canvas id="captureCanvas" class="hidden"></canvas>
+    <script src="/static/app.js?v=embedfix2" defer></script>
+  </body>
+</html>

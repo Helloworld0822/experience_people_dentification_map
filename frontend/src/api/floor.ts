@@ -1,4 +1,8 @@
-import type { CountUpdate, FloorData } from '../types/floor'
+import type {
+  CountUpdate,
+  FloorData,
+  LatestDetectionResponse,
+} from '../types/floor'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? ''
 
@@ -17,6 +21,10 @@ export async function updateSpaceCount(
     },
     body: JSON.stringify(payload),
   })
+}
+
+export async function fetchLatestDetection(): Promise<LatestDetectionResponse> {
+  return requestJson<LatestDetectionResponse>('/api/v1/detections/latest')
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {

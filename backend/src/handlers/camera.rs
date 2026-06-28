@@ -87,27 +87,25 @@ fn build_mjpeg_response(
 
     // Wrap in a TryStream adapter to pin the error type to
     // `std::io::Error`, which axum's `Body::from_stream` accepts.
-    let pinned: std::pin::Pin<Box<dyn futures_core::Stream<Item = Result<Bytes, std::io::Error>> + Send>> =
-        Box::pin(futures_util::TryStreamExt::map_ok(
-            body_stream,
-            std::convert::identity,
-        ));
+    let pinned: std::pin::Pin<
+        Box<dyn futures_core::Stream<Item = Result<Bytes, std::io::Error>> + Send>,
+    > = Box::pin(futures_util::TryStreamExt::map_ok(
+        body_stream,
+        std::convert::identity,
+    ));
 
     let body = Body::from_stream(pinned);
-    let mut response = Response::builder()
+    Response::builder()
         .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, HeaderValue::from_str(&content_type).unwrap())
+        .header(
+            header::CONTENT_TYPE,
+            HeaderValue::from_str(&content_type).unwrap(),
+        )
         .header(
             header::CACHE_CONTROL,
             HeaderValue::from_static("no-cache, no-store, must-revalidate"),
         )
         .header(header::PRAGMA, HeaderValue::from_static("no-cache"))
         .body(body)
-        .expect("static response builder should not fail");
-
-    response
-        .headers_mut()
-        .insert(header::CONNECTION, HeaderValue::from_static("close"));
-
-    response
+        .expect("static response builder should not fail")
 }

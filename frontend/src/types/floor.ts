@@ -41,3 +41,20 @@ export type FloorData = {
 export type CountUpdate = {
   count: number
 }
+
+export type DetectionRecord = {
+  camera_id: string
+  space_id: number | null
+  people_count: number
+  confidence: number | null
+  inference_ms: number | null
+  density_score: number | null
+  density_level: string | null
+  source: string
+  captured_at: string | null
+  received_at_ms: number
+}
+
+export type LatestDetectionResponse = {
+  detection: DetectionRecord | null
+}

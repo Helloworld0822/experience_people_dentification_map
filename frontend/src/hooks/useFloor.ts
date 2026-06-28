@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { fetchFloor, updateSpaceCount } from '../api/floor'
 import type { FloorData, Space, SpaceCount } from '../types/floor'
 
-const POLL_MS = 5_000
+const POLL_MS = 2_000
 
 type UseFloorResult = {
   floor: FloorData | null

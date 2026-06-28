@@ -1,0 +1,28 @@
+.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# Model weights and generated outputs
+*.pt
+*.onnx
+*.mlpackage
+runs/
+
+# Local datasets (keep directory structure only)
+datasets/*
+!datasets/.gitkeep
+!datasets/person/
+datasets/person/*
+!datasets/person/images/
+!datasets/person/labels/
+datasets/person/images/*
+datasets/person/labels/*
+!datasets/person/images/train/
+!datasets/person/images/val/
+!datasets/person/labels/train/
+!datasets/person/labels/val/
+!datasets/person/images/train/.gitkeep
+!datasets/person/images/val/.gitkeep
+!datasets/person/labels/train/.gitkeep
+!datasets/person/labels/val/.gitkeep

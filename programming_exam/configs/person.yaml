@@ -1,0 +1,9 @@
+# YOLO detection dataset configuration for a single "person" class.
+# Ultralytics resolves relative dataset roots against its global datasets directory,
+# so this workspace uses an explicit path.
+path: "/Users/minjun/Documents/New project 4/datasets/person"
+train: images/train
+val: images/val
+
+names:
+  0: person

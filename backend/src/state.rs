@@ -11,6 +11,10 @@ use crate::models::{Space, seed_floor};
 pub struct AppState {
     /// Redis client used for per-space counts and the latest detection.
     pub redis: Client,
+    /// HTTP client for calling the external YOLO inference API.
+    pub http: reqwest::Client,
+    /// Full URL to YOLO JSON detect endpoint.
+    pub yolo_detect_url: String,
     /// Static floor plan (spaces and viewbox). Wrapped in a Mutex so
     /// `cargo` future evolution stays easy; today this is read-only.
     pub floor: Arc<Mutex<Floor>>,
@@ -25,11 +29,13 @@ pub struct Floor {
 
 impl AppState {
     /// Build a state that talks to `redis_url` and seeds the floor plan.
-    pub fn new(redis_url: &str) -> Result<Self, redis::RedisError> {
+    pub fn new(redis_url: &str, yolo_detect_url: String) -> Result<Self, redis::RedisError> {
         let redis = Client::open(redis_url)?;
         let (viewbox, spaces) = seed_floor();
         Ok(Self {
             redis,
+            http: reqwest::Client::new(),
+            yolo_detect_url,
             floor: Arc::new(Mutex::new(Floor { viewbox, spaces })),
             started_at: Arc::new(Instant::now()),
         })

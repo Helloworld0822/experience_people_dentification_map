@@ -14,8 +14,10 @@ services:
     environment:
       BIND_ADDR: 0.0.0.0:8080
       REDIS_URL: redis://redis:6379
+      YOLO_DETECT_URL: http://model:8765/api/v1/detect
     depends_on:
       - redis
+      - model
     ports:
       - "8080:8080"
 
@@ -27,6 +29,13 @@ services:
       - backend
     ports:
       - "3000:80"
+
+  model:
+    build:
+      context: ./programming_exam
+      dockerfile: Containerfile
+    ports:
+      - "8765:8765"
 
 volumes:
   redis-data:

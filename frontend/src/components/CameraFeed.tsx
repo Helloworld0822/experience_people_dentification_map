@@ -1,67 +1,102 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+
+import { fetchLatestDetection } from '../api/floor'
 
 type CameraFeedProps = {
   spaceId: number
+  currentCount: number
 }
 
-/**
- * Live MJPEG stream coming from the backend.
- *
- * - When the user picks a different space, we change `<img key>` to
- *   force React to unmount/remount the element so the browser drops
- *   the old connection and opens a new one for the new space.
- * - The reconnect button increments a refresh counter that also
- *   changes the `key`, doing the same thing on demand.
- * - `cache-bust` query string is added so Chrome never serves a stale
- *   cached partial response.
- */
-export function CameraFeed({ spaceId }: CameraFeedProps) {
-  const [instanceId, setInstanceId] = useState(() => spaceId)
-  const [tick, setTick] = useState(0)
-  const [error, setError] = useState(false)
+function densityFromCount(count: number): string {
+  if (count >= 16) return '매우 혼잡'
+  if (count >= 11) return '혼잡'
+  if (count >= 5) return '보통'
+  return '여유'
+}
 
-  // Force a fresh <img> (and therefore a fresh connection) whenever
-  // the user navigates to a different space.
+export function CameraFeed({ spaceId, currentCount }: CameraFeedProps) {
+  const [error, setError] = useState<string | null>(null)
+  const [density, setDensity] = useState<string | null>(null)
+  const [cameraId, setCameraId] = useState<string | null>(null)
+  const [inferenceMs, setInferenceMs] = useState<number | null>(null)
+  const [tick, setTick] = useState(0)
+
+  const streamBaseUrl = useMemo(() => {
+    const host = window.location.hostname || '127.0.0.1'
+    return `http://${host}:8765/api/v1/live/stream`
+  }, [])
+
+  const streamUrl = `${streamBaseUrl}?space=${spaceId}&n=${tick}`
+
   useEffect(() => {
-    setError(false)
-    setInstanceId(spaceId)
+    setDensity(null)
+    setCameraId(null)
+    setInferenceMs(null)
   }, [spaceId])
 
-  const reconnect = () => {
-    setError(false)
-    setTick((t) => t + 1)
-  }
-
-  const src = `/api/v1/spaces/${spaceId}/stream?n=${instanceId}-${tick}`
+  useEffect(() => {
+    let cancelled = false
+    const poll = async () => {
+      try {
+        const latest = await fetchLatestDetection()
+        if (cancelled) return
+        const detection = latest.detection
+        if (detection && (detection.space_id === null || detection.space_id === spaceId)) {
+          setDensity(detection.density_level ?? densityFromCount(currentCount))
+          setInferenceMs(detection.inference_ms ?? null)
+          setCameraId(detection.camera_id)
+        } else {
+          setDensity((prev) => prev ?? densityFromCount(currentCount))
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : '최신 탐지값을 읽지 못했습니다.')
+        }
+      }
+    }
+    void poll()
+    const timer = window.setInterval(() => void poll(), 2000)
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [spaceId, currentCount])
 
   return (
     <div className="camera-feed">
-      <div className="camera-feed__header">
-        <span className="camera-feed__label">
-          <span className="camera-feed__dot" aria-hidden /> LIVE · space-{spaceId}
-        </span>
-        <button type="button" className="camera-feed__reconnect" onClick={reconnect}>
-          재연결
-        </button>
-      </div>
       <div className="camera-feed__viewport">
-        {!error ? (
-          <img
-            key={`${spaceId}-${instanceId}-${tick}`}
-            src={src}
-            alt={`공간 ${spaceId} 실시간 카메라`}
-            className="camera-feed__img"
-            onError={() => setError(true)}
-          />
-        ) : (
+        <img
+          key={`${spaceId}-${tick}`}
+          src={streamUrl}
+          title={`공간 ${spaceId} 실시간 카메라`}
+          className="camera-feed__img"
+          alt={`공간 ${spaceId} 실시간 카메라`}
+          onError={() =>
+            setError('8765에서 카메라를 먼저 시작해야 합니다. 8765 화면에서 카메라 연결 후 재연결을 눌러주세요.')
+          }
+        />
+        <div className="camera-feed__metrics" role="status" aria-live="polite">
+          <p>사람 수: {currentCount}명</p>
+          <p>밀집도: {density ?? densityFromCount(currentCount)}</p>
+          <p>추론: {inferenceMs !== null ? `${Math.round(inferenceMs)}ms` : '대기'}</p>
+          <p>카메라: {cameraId ?? '연결 대기'}</p>
+        </div>
+        {error && (
           <div className="camera-feed__error" role="alert">
-            <p>스트림에 연결할 수 없습니다.</p>
-            <button type="button" onClick={reconnect}>
-              다시 시도
-            </button>
+            <p>{error}</p>
           </div>
         )}
       </div>
+      <button
+        type="button"
+        className="camera-feed__reconnect"
+        onClick={() => {
+          setError(null)
+          setTick((value) => value + 1)
+        }}
+      >
+        재연결
+      </button>
     </div>
   )
 }

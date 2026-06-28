@@ -26,10 +26,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bind_addr: SocketAddr = env::var("BIND_ADDR")
         .unwrap_or_else(|_| "0.0.0.0:8080".to_string())
         .parse()?;
-    let redis_url =
-        env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".to_string());
+    let redis_url = env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".to_string());
+    let yolo_detect_url = env::var("YOLO_DETECT_URL")
+        .unwrap_or_else(|_| "http://127.0.0.1:8765/api/v1/detect".to_string());
 
-    let state = Arc::new(AppState::new(&redis_url)?);
+    let state = Arc::new(AppState::new(&redis_url, yolo_detect_url)?);
 
     // CORS for local dev (5173 = vite default, 3000 = nginx in
     // compose.yaml). Production should narrow this.
@@ -37,6 +38,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         HeaderValue::from_static("http://localhost:5173"),
         HeaderValue::from_static("http://127.0.0.1:5173"),
         HeaderValue::from_static("http://localhost:3000"),
+        HeaderValue::from_static("http://localhost:8765"),
+        HeaderValue::from_static("http://127.0.0.1:8765"),
     ];
 
     let cors = CorsLayer::new()
@@ -54,19 +57,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new()
         .route("/health", get(handlers::health))
         .route("/api/v1/floor", get(handlers::get_floor))
-        .route(
-            "/api/v1/spaces/{id}/count",
-            post(handlers::update_count),
-        )
-        .route(
-            "/api/v1/spaces/{id}/stream",
-            get(handlers::stream_space),
-        )
+        .route("/api/v1/spaces/{id}/count", post(handlers::update_count))
+        .route("/api/v1/spaces/{id}/stream", get(handlers::stream_space))
         .route("/api/v1/detections", post(handlers::create_detection))
         .route(
-            "/api/v1/detections/latest",
-            get(handlers::latest_detection),
+            "/api/v1/detections/infer",
+            post(handlers::infer_and_create_detection),
         )
+        .route("/api/v1/detections/latest", get(handlers::latest_detection))
         .layer(TraceLayer::new_for_http())
         .layer(cors)
         .with_state(state);

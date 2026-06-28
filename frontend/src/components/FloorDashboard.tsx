@@ -20,7 +20,6 @@ export function FloorDashboard() {
     selectSpace,
     countFor,
     totalPeople,
-    bumpCount,
     refresh,
   } = useFloor()
   const [selectedZone, setSelectedZone] = useState<ZoneId | null>(null)
@@ -165,11 +164,6 @@ export function FloorDashboard() {
           space={selectedSpace}
           count={selectedCount}
           updatedAtMs={selectedUpdatedAtMs}
-          onBump={async (delta) => {
-            if (selectedSpace) {
-              await bumpCount(selectedSpace.id, delta)
-            }
-          }}
           onClose={() => selectSpace(null)}
         />
       </section>

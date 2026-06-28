@@ -127,6 +127,9 @@ pub struct DetectionRecord {
     pub space_id: Option<u8>,
     pub people_count: u32,
     pub confidence: Option<f32>,
+    pub inference_ms: Option<f32>,
+    pub density_score: Option<f32>,
+    pub density_level: Option<String>,
     pub source: String,
     pub captured_at: Option<String>,
     pub received_at_ms: i64,
@@ -138,8 +141,54 @@ pub struct DetectionInput {
     pub space_id: Option<u8>,
     pub people_count: u32,
     pub confidence: Option<f32>,
+    pub inference_ms: Option<f32>,
+    pub density_score: Option<f32>,
+    pub density_level: Option<String>,
     pub source: Option<String>,
     pub captured_at: Option<String>,
+}
+
+/// Payload accepted by `POST /api/v1/detections/infer`.
+/// The backend forwards this to the YOLO model server and stores the result.
+#[derive(Debug, Clone, Deserialize)]
+pub struct DetectionInferInput {
+    pub image_base64: String,
+    pub confidence: Option<f32>,
+    pub dense_mode: Option<bool>,
+    pub camera_id: Option<String>,
+    pub space_id: Option<u8>,
+    pub source: Option<String>,
+    pub captured_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct YoloDetectionBox {
+    pub confidence: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct YoloDetectionResponse {
+    #[serde(default)]
+    pub count: u32,
+    #[serde(default)]
+    pub boxes: Vec<YoloDetectionBox>,
+    pub inference_ms: Option<f32>,
+    pub density: Option<YoloDensity>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct YoloDensity {
+    pub score: Option<f32>,
+    pub level: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DetectionInferResponse {
+    pub detection: DetectionRecord,
+    pub model_count: u32,
+    pub inference_ms: Option<f32>,
+    pub density_score: Option<f32>,
+    pub density_level: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -210,7 +259,9 @@ pub fn seed_floor() -> (ViewBox, Vec<Space>) {
             zone: Zone::Learning,
             title_ko: "디지털 교육실".to_string(),
             title_en: "Digital Classroom".to_string(),
-            description_ko: "스마트폰 활용, 키오스크 사용법, 일상생활 디지털 기기 활용 등 수준별 맞춤 교육 진행".to_string(),
+            description_ko:
+                "스마트폰 활용, 키오스크 사용법, 일상생활 디지털 기기 활용 등 수준별 맞춤 교육 진행"
+                    .to_string(),
             x: 30.0,
             y: 40.0,
             width: 290.0,
@@ -222,7 +273,9 @@ pub fn seed_floor() -> (ViewBox, Vec<Space>) {
             zone: Zone::Learning,
             title_ko: "디지털 상담존".to_string(),
             title_en: "Digital Counseling".to_string(),
-            description_ko: "일상에서 마주하는 디지털 기기나 인터넷 사용 문제에 대해 1:1 맞춤형 전문 상담 지원".to_string(),
+            description_ko:
+                "일상에서 마주하는 디지털 기기나 인터넷 사용 문제에 대해 1:1 맞춤형 전문 상담 지원"
+                    .to_string(),
             x: 30.0,
             y: 290.0,
             width: 290.0,
@@ -235,7 +288,8 @@ pub fn seed_floor() -> (ViewBox, Vec<Space>) {
             zone: Zone::Leisure,
             title_ko: "무인 로봇 카페".to_string(),
             title_en: "Unmanned Robot Cafe".to_string(),
-            description_ko: "로봇 바리스타가 직접 내려주는 커피를 마시며 휴식할 수 있는 공간".to_string(),
+            description_ko: "로봇 바리스타가 직접 내려주는 커피를 마시며 휴식할 수 있는 공간"
+                .to_string(),
             x: 350.0,
             y: 40.0,
             width: 290.0,
@@ -260,7 +314,8 @@ pub fn seed_floor() -> (ViewBox, Vec<Space>) {
             zone: Zone::Health,
             title_ko: "스크린 파크골프".to_string(),
             title_en: "Screen Park Golf".to_string(),
-            description_ko: "실내에서 날씨와 관계없이 즐길 수 있는 스크린 스포츠 체험 시설".to_string(),
+            description_ko: "실내에서 날씨와 관계없이 즐길 수 있는 스크린 스포츠 체험 시설"
+                .to_string(),
             x: 670.0,
             y: 40.0,
             width: 300.0,
@@ -273,7 +328,8 @@ pub fn seed_floor() -> (ViewBox, Vec<Space>) {
             zone: Zone::Cognitive,
             title_ko: "해피테이블, 멀티키움 등".to_string(),
             title_en: "Happy Table & Multi Kids".to_string(),
-            description_ko: "인지 능력 향상과 두뇌 활동을 돕는 다양한 디지털 게임 및 어가 콘텐츠".to_string(),
+            description_ko: "인지 능력 향상과 두뇌 활동을 돕는 다양한 디지털 게임 및 어가 콘텐츠"
+                .to_string(),
             x: 670.0,
             y: 290.0,
             width: 300.0,
@@ -298,7 +354,8 @@ pub fn seed_floor() -> (ViewBox, Vec<Space>) {
             zone: Zone::Cognitive,
             title_ko: "엑사하트".to_string(),
             title_en: "Exa Heart".to_string(),
-            description_ko: "인지 능력 향상과 정서 안정, 스트레스 케어 콘텐츠 (인지·정서 케어)".to_string(),
+            description_ko: "인지 능력 향상과 정서 안정, 스트레스 케어 콘텐츠 (인지·정서 케어)"
+                .to_string(),
             x: 740.0,
             y: 440.0,
             width: 70.0,
@@ -336,17 +393,12 @@ pub fn seed_floor() -> (ViewBox, Vec<Space>) {
 
 /// Canonical zone list, in display order (top → bottom, left → right).
 pub fn zone_infos() -> Vec<ZoneInfo> {
-    [
-        Zone::Learning,
-        Zone::Leisure,
-        Zone::Health,
-        Zone::Cognitive,
-    ]
-    .into_iter()
-    .map(|z| ZoneInfo {
-        id: z,
-        label_ko: z.label_ko().to_string(),
-        color: z.color().to_string(),
-    })
-    .collect()
+    [Zone::Learning, Zone::Leisure, Zone::Health, Zone::Cognitive]
+        .into_iter()
+        .map(|z| ZoneInfo {
+            id: z,
+            label_ko: z.label_ko().to_string(),
+            color: z.color().to_string(),
+        })
+        .collect()
 }
