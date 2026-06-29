@@ -28,22 +28,24 @@ function densityFromLevel(level: string | null | undefined, count: number): stri
 }
 
 export function CameraFeed({ spaceId, currentCount }: CameraFeedProps) {
+  const [error, setError] = useState<string | null>(null)
   const [density, setDensity] = useState<string | null>(null)
   const [cameraId, setCameraId] = useState<string | null>(null)
   const [inferenceMs, setInferenceMs] = useState<number | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
 
-  const modelHost = useMemo(() => window.location.hostname || '127.0.0.1', [])
-  const embedUrl = useMemo(
-    () =>
-      `http://${modelHost}:8765/?embed=camera&space=${spaceId}&v=${reloadKey}`,
-    [modelHost, reloadKey, spaceId],
-  )
+  const streamBaseUrl = useMemo(() => {
+    const host = window.location.hostname || '127.0.0.1'
+    return `http://${host}:8765/api/v1/live/stream`
+  }, [])
+
+  const streamUrl = `${streamBaseUrl}?space=${spaceId}&n=${reloadKey}`
 
   useEffect(() => {
     setDensity(null)
     setCameraId(null)
     setInferenceMs(null)
+    setError(null)
   }, [spaceId])
 
   useEffect(() => {
@@ -55,10 +57,11 @@ export function CameraFeed({ spaceId, currentCount }: CameraFeedProps) {
         const detection = latest.detection
         if (
           detection &&
-          detection.space_id !== null &&
-          detection.space_id === spaceId
+          (detection.space_id === null || detection.space_id === spaceId)
         ) {
-          setDensity(densityFromLevel(detection.density_level, detection.people_count))
+          setDensity(
+            densityFromLevel(detection.density_level, detection.people_count),
+          )
           setInferenceMs(detection.inference_ms ?? null)
           setCameraId(detection.camera_id)
           return
@@ -87,12 +90,18 @@ export function CameraFeed({ spaceId, currentCount }: CameraFeedProps) {
   return (
     <div className="camera-feed">
       <div className="camera-feed__viewport">
-        <iframe
+        <img
           key={`${spaceId}-${reloadKey}`}
-          src={embedUrl}
+          src={streamUrl}
           title={`공간 ${spaceId} 실시간 카메라`}
-          className="camera-feed__embed"
-          allow="camera; microphone"
+          className="camera-feed__img"
+          alt={`공간 ${spaceId} 실시간 카메라`}
+          onLoad={() => setError(null)}
+          onError={() =>
+            setError(
+              '8765에서 카메라를 먼저 시작해야 합니다. 8765 화면에서 카메라 연결 후 재연결을 눌러주세요.',
+            )
+          }
         />
         <div className="camera-feed__metrics" role="status" aria-live="polite">
           <p>사람 수: {currentCount}명</p>
@@ -100,11 +109,19 @@ export function CameraFeed({ spaceId, currentCount }: CameraFeedProps) {
           <p>추론: {inferenceMs !== null ? `${Math.round(inferenceMs)}ms` : '대기'}</p>
           <p>카메라: {cameraId ?? '연결 대기'}</p>
         </div>
+        {error && (
+          <div className="camera-feed__error" role="alert">
+            <p>{error}</p>
+          </div>
+        )}
       </div>
       <button
         type="button"
         className="camera-feed__reconnect"
-        onClick={() => setReloadKey((value) => value + 1)}
+        onClick={() => {
+          setError(null)
+          setReloadKey((value) => value + 1)
+        }}
       >
         재연결
       </button>
