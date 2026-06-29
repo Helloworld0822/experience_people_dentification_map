@@ -222,7 +222,10 @@ function stopCamera() {
   detectionStatus.textContent = "대기";
   latency.textContent = "— ms";
   countValue.textContent = "0";
-  void fetch("/api/v1/live/clear", { method: "POST" }).catch(() => {});
+  // Ensure dashboard count is reset when camera capture stops.
+  void syncCountToBackend(activeSpaceId, 0);
+  const spaceParam = Number.isFinite(activeSpaceId) ? `?space=${encodeURIComponent(activeSpaceId)}` : "";
+  void fetch(`/api/v1/live/clear${spaceParam}`, { method: "POST" }).catch(() => {});
 }
 
 async function getCameraStream() {
@@ -311,7 +314,8 @@ async function pushLiveFrame(blob) {
   if (now - lastLiveFrameUploadMs < 120) return;
   lastLiveFrameUploadMs = now;
   try {
-    await fetch("/api/v1/live/frame", {
+    const spaceParam = Number.isFinite(activeSpaceId) ? `?space=${encodeURIComponent(activeSpaceId)}` : "";
+    await fetch(`/api/v1/live/frame${spaceParam}`, {
       method: "POST",
       headers: { "Content-Type": "image/jpeg" },
       body: blob,

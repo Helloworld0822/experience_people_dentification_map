@@ -49,6 +49,7 @@ _device = "mps" if torch.backends.mps.is_available() else "cpu"
 _live_frame_lock = threading.RLock()
 _live_frame_jpeg: bytes | None = None
 _live_frame_updated_at = 0.0
+_live_frames_by_space: dict[int, tuple[bytes, float]] = {}
 
 
 class JsonDetectionRequest(BaseModel):
@@ -194,7 +195,15 @@ def decode_image(image_bytes: bytes) -> np.ndarray:
     return frame
 
 
-def set_live_frame(image_bytes: bytes) -> None:
+def normalize_space_id(space_id: int | None) -> int | None:
+    if space_id is None:
+        return None
+    if space_id < 1:
+        return 1
+    return int(space_id)
+
+
+def set_live_frame(image_bytes: bytes, space_id: int | None = None) -> None:
     """Store a sanitized live frame uploaded from the browser camera page."""
     global _live_frame_jpeg, _live_frame_updated_at
     frame = decode_image(image_bytes)
@@ -204,17 +213,33 @@ def set_live_frame(image_bytes: bytes) -> None:
     with _live_frame_lock:
         _live_frame_jpeg = encoded.tobytes()
         _live_frame_updated_at = time.time()
+        normalized = normalize_space_id(space_id)
+        if normalized is not None:
+            _live_frames_by_space[normalized] = (_live_frame_jpeg, _live_frame_updated_at)
 
 
-def clear_live_frame() -> None:
+def clear_live_frame(space_id: int | None = None) -> None:
     global _live_frame_jpeg, _live_frame_updated_at
     with _live_frame_lock:
-        _live_frame_jpeg = None
-        _live_frame_updated_at = 0.0
+        normalized = normalize_space_id(space_id)
+        if normalized is None:
+            _live_frame_jpeg = None
+            _live_frame_updated_at = 0.0
+            _live_frames_by_space.clear()
+            return
+        _live_frames_by_space.pop(normalized, None)
+        if not _live_frames_by_space:
+            _live_frame_jpeg = None
+            _live_frame_updated_at = 0.0
 
 
-def get_live_frame_snapshot() -> tuple[bytes | None, float]:
+def get_live_frame_snapshot(space_id: int | None = None) -> tuple[bytes | None, float]:
     with _live_frame_lock:
+        normalized = normalize_space_id(space_id)
+        if normalized is not None:
+            scoped = _live_frames_by_space.get(normalized)
+            if scoped is not None:
+                return scoped
         return _live_frame_jpeg, _live_frame_updated_at
 
 
@@ -546,23 +571,30 @@ def detect_cctv(payload: CctvDetectionRequest) -> DetectionResponse:
 
 
 @app.post("/api/v1/live/frame", status_code=204, tags=["stream"])
-async def upload_live_frame(request: Request) -> Response:
+async def upload_live_frame(
+    request: Request,
+    space: Annotated[int | None, Query(ge=1)] = None,
+) -> Response:
     """Receive a browser camera frame to rebroadcast for external viewers."""
-    set_live_frame(await request.body())
+    set_live_frame(await request.body(), space)
     return Response(status_code=204)
 
 
 @app.post("/api/v1/live/clear", status_code=204, tags=["stream"])
-def clear_live_stream_frame() -> Response:
-    clear_live_frame()
+def clear_live_stream_frame(
+    space: Annotated[int | None, Query(ge=1)] = None,
+) -> Response:
+    clear_live_frame(space)
     return Response(status_code=204)
 
 
 @app.get("/api/v1/live/frame", tags=["stream"])
-def get_live_frame() -> Response:
-    frame, _ = get_live_frame_snapshot()
+def get_live_frame(space: Annotated[int | None, Query(ge=1)] = None) -> Response:
+    frame, _ = get_live_frame_snapshot(space)
     if frame is None:
-        raise HTTPException(status_code=404, detail="No live camera frame available yet")
+        if space is None:
+            raise HTTPException(status_code=404, detail="No live camera frame available yet")
+        raise HTTPException(status_code=404, detail=f"No live camera frame for space={space}")
     return Response(
         content=frame,
         media_type="image/jpeg",
@@ -570,10 +602,10 @@ def get_live_frame() -> Response:
     )
 
 
-def live_stream_generator():
+def live_stream_generator(space_id: int | None = None):
     last_sent_at = 0.0
     while True:
-        frame, updated_at = get_live_frame_snapshot()
+        frame, updated_at = get_live_frame_snapshot(space_id)
         if frame is None or updated_at <= last_sent_at:
             time.sleep(0.08)
             continue
@@ -588,9 +620,11 @@ def live_stream_generator():
 
 
 @app.get("/api/v1/live/stream", tags=["stream"])
-def get_live_stream() -> StreamingResponse:
+def get_live_stream(
+    space: Annotated[int | None, Query(ge=1)] = None,
+) -> StreamingResponse:
     return StreamingResponse(
-        live_stream_generator(),
+        live_stream_generator(space),
         media_type="multipart/x-mixed-replace; boundary=frame",
         headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
     )
