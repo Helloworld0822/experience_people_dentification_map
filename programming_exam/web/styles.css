@@ -504,4 +504,14 @@ body.embed-camera .viewer {
   .camera-layout { grid-template-columns: 1fr; }
   .viewer { min-height: 380px; }
   .camera-controls { border-left: 0; border-top: 1px solid var(--line); }
+  .camera-modal { padding: 0; }
+  .camera-dialog {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+  }
+  .camera-layout { min-height: 100dvh; }
+  .viewer { min-height: 55dvh; }
 }

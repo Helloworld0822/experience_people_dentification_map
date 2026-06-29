@@ -29,13 +29,17 @@ services:
       - backend
     ports:
       - "3000:80"
+      - "3443:443"
 
   model:
     build:
       context: ./programming_exam
       dockerfile: Containerfile
+    environment:
+      BACKEND_URL: http://backend:8080
     ports:
-      - "8765:8765"
+      - "8765:8443"
+      - "8766:8765"
 
 volumes:
   redis-data:

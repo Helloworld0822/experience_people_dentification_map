@@ -41,7 +41,7 @@ let startingCamera = false;
 let cameraStartToken = 0;
 let activeSpaceId = 1;
 let floorData = null;
-const RUST_API_BASE = `${window.location.protocol}//${window.location.hostname}:8080`;
+const RUST_API_BASE = window.location.origin;
 const SPACE_CAPACITY = 20;
 const COMPACT_ZONE_LABELS = {
   7: "더브레인",
@@ -132,6 +132,10 @@ function setMapScale(nextScale) {
   mapStage.style.transform = `scale(${mapScale})`;
 }
 
+function isMobileDevice() {
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
 function openCamera(spaceId) {
   activeSpaceId = spaceId;
   const space = floorData?.spaces?.find((item) => item.id === spaceId);
@@ -139,6 +143,9 @@ function openCamera(spaceId) {
   selectZone(spaceId);
   cameraModal.classList.remove("hidden");
   document.body.classList.add("modal-open");
+  if (isMobileDevice() && !stream) {
+    void startCamera();
+  }
 }
 
 function closeCamera() {
@@ -154,6 +161,14 @@ async function startCamera() {
   startingCamera = true;
   cameraButton.disabled = true;
   hideError();
+  if (!window.isSecureContext) {
+    startingCamera = false;
+    cameraButton.disabled = false;
+    showError(
+      "폰에서는 HTTPS로 접속해야 카메라를 사용할 수 있습니다. https://<PC-IP>:8765 로 접속해 주세요.",
+    );
+    return;
+  }
   if (!navigator.mediaDevices?.getUserMedia) {
     startingCamera = false;
     cameraButton.disabled = false;
@@ -198,7 +213,9 @@ async function startCamera() {
     detectionStatus.textContent = "권한 필요";
     const message = error.name === "NotAllowedError"
       ? "카메라 권한이 거부되었습니다. 주소창에서 권한을 허용해 주세요."
-      : `카메라를 시작하지 못했습니다: ${error.message}`;
+      : !window.isSecureContext
+        ? "HTTPS 접속이 필요합니다. https://<PC-IP>:8765 로 접속해 주세요."
+        : `카메라를 시작하지 못했습니다: ${error.message}`;
     showError(message);
   } finally {
     if (startToken === cameraStartToken) {
@@ -236,13 +253,33 @@ function stopCamera() {
 }
 
 async function getCameraStream() {
-  const preferred = {
-    video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-    audio: false,
-  };
+  const mobile = isMobileDevice();
+  const preferred = mobile
+    ? {
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      }
+    : {
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      };
   try {
     return await navigator.mediaDevices.getUserMedia(preferred);
   } catch (error) {
+    if (mobile && error?.name !== "NotAllowedError") {
+      try {
+        return await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        });
+      } catch {
+        // Fall through to generic retry below.
+      }
+    }
     // Some desktops reject facingMode/size constraints; retry with a plain camera request.
     if (
       error?.name === "OverconstrainedError" ||

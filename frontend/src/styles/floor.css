@@ -710,13 +710,27 @@
 }
 
 .camera-feed__img,
-.camera-feed__embed {
+.camera-feed__embed,
+.camera-feed__viewport video {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
   background: #1A1A1A;
   border: 0;
+}
+
+.camera-feed__img--hidden {
+  display: none;
+}
+
+.camera-feed__img--fallback {
+  position: absolute;
+  inset: 0;
+}
+
+.camera-feed__canvas {
+  display: none;
 }
 
 .camera-feed__metrics {
@@ -1142,7 +1156,7 @@
    ============================================================ */
 
 body {
-  overflow: hidden;
+  overflow: auto;
 }
 
 .app-shell {
@@ -1843,19 +1857,50 @@ body {
   }
 }
 
+.mobile-space-list {
+  display: none;
+}
+
 @media (max-width: 768px) {
-  .topbar__search,
-  .topbar__nav {
-    display: none;
+  body {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .side-nav {
-    padding: var(--space-5);
+  .app-shell {
+    grid-template-rows: auto auto auto;
+    min-height: 100vh;
+    height: auto;
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    min-height: auto;
+    overflow: visible;
   }
 
   .map-canvas {
-    min-height: 560px;
+    order: 1;
+    overflow: visible;
+    flex: 0 0 auto;
+    min-height: auto;
     padding: var(--space-4);
+  }
+
+  .side-nav {
+    order: 3;
+    padding: var(--space-5);
+  }
+
+  .space-details,
+  .space-details--empty {
+    order: 2;
+  }
+
+  .topbar__search,
+  .topbar__nav {
+    display: none;
   }
 
   .map-canvas__header {
@@ -1863,13 +1908,16 @@ body {
   }
 
   .map-frame {
+    min-height: 360px;
     width: 100%;
     padding: var(--space-4);
-    overflow-x: auto;
+    overflow: visible;
   }
 
   .floor-map {
-    min-width: 620px;
+    min-width: 0;
+    width: 100%;
+    max-height: none;
   }
 
   .map-controls {
@@ -1878,5 +1926,37 @@ body {
 
   .space-details__hero {
     min-height: 220px;
+  }
+
+  .mobile-space-list {
+    display: flex;
+    gap: var(--space-2);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--space-2) 0 var(--space-4);
+    scrollbar-width: none;
+  }
+
+  .mobile-space-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-space-list__item {
+    flex: 0 0 auto;
+    min-height: 48px;
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: var(--text-caption);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .mobile-space-list__item.is-selected {
+    background: var(--seoul-blue-dark);
+    border-color: var(--seoul-blue-dark);
+    color: #fff;
   }
 }

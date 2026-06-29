@@ -5,12 +5,12 @@ use std::time::Duration;
 
 use axum::{
     Router,
-    http::{HeaderValue, Method, header},
+    http::{Method, header},
     routing::{get, post},
 };
 use backend::{AppState, handlers};
 use tokio::net::TcpListener;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -32,19 +32,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let state = Arc::new(AppState::new(&redis_url, yolo_detect_url)?);
 
-    // CORS for local dev (5173 = vite default, 3000 = nginx in
-    // compose.yaml). Production should narrow this.
-    let allowed_origins = [
-        HeaderValue::from_static("http://localhost:5173"),
-        HeaderValue::from_static("http://127.0.0.1:5173"),
-        HeaderValue::from_static("http://localhost:3000"),
-        HeaderValue::from_static("http://127.0.0.1:3000"),
-        HeaderValue::from_static("http://localhost:8765"),
-        HeaderValue::from_static("http://127.0.0.1:8765"),
-    ];
-
+    // Allow LAN/mobile clients (phone on same Wi-Fi) to reach the API.
     let cors = CorsLayer::new()
-        .allow_origin(allowed_origins)
+        .allow_origin(Any)
         .allow_methods([
             Method::GET,
             Method::POST,

@@ -143,6 +143,20 @@ export function FloorDashboard() {
             </div>
             <span>{selectedZone ? '필터 적용됨' : '전체 공간'}</span>
           </div>
+          <div className="mobile-space-list" aria-label="공간 빠른 선택">
+            {floor.spaces.map((space) => (
+              <button
+                key={space.id}
+                type="button"
+                className={`mobile-space-list__item${
+                  selectedSpace?.id === space.id ? ' is-selected' : ''
+                }`}
+                onClick={() => selectSpace(space)}
+              >
+                {space.id}. {space.title_ko} ({countFor(space.id)}명)
+              </button>
+            ))}
+          </div>
           <div className="map-frame">
             <FloorPlanMap
               floor={floor}

@@ -9,6 +9,8 @@ import math
 import os
 import threading
 import time
+import urllib.error
+import urllib.request
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated
@@ -28,6 +30,7 @@ ROOT = Path(__file__).resolve().parent.parent
 WEB_DIR = ROOT / "web"
 MODEL_NAME = os.getenv("YOLO_MODEL", "yolo26m.pt")
 MODEL_PATH = ROOT / MODEL_NAME
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8080").rstrip("/")
 INFERENCE_SIZE = int(os.getenv("YOLO_IMGSZ", "960"))
 PERSON_CLASS_ID = 0
 MAX_FRAME_BYTES = 8 * 1024 * 1024
@@ -159,12 +162,67 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origin_regex=r"https?://.*",
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type"],
 )
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Permissions-Policy"] = "camera=(self), microphone=(self)"
+    return response
+
+
+def proxy_to_backend(
+    method: str,
+    path: str,
+    body: bytes | None = None,
+    content_type: str | None = None,
+) -> Response:
+    """Forward dashboard sync calls to the Rust backend on the same origin."""
+    headers: dict[str, str] = {}
+    if content_type:
+        headers["Content-Type"] = content_type
+    request = urllib.request.Request(
+        f"{BACKEND_URL}{path}",
+        data=body,
+        headers=headers,
+        method=method,
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=10) as upstream:
+            payload = upstream.read()
+            media_type = upstream.headers.get_content_type()
+            if media_type == "text/plain" and payload.startswith(b"{"):
+                media_type = "application/json"
+            return Response(content=payload, status_code=upstream.status, media_type=media_type)
+    except urllib.error.HTTPError as exc:
+        return Response(content=exc.read(), status_code=exc.code)
+    except urllib.error.URLError as exc:
+        raise HTTPException(status_code=502, detail=f"Backend unavailable: {exc.reason}") from exc
+
+
+@app.get("/api/v1/floor", tags=["dashboard"])
+def proxy_floor() -> Response:
+    return proxy_to_backend("GET", "/api/v1/floor")
+
+
+@app.post("/api/v1/spaces/{space_id}/count", tags=["dashboard"])
+async def proxy_space_count(space_id: int, request: Request) -> Response:
+    body = await request.body()
+    content_type = request.headers.get("content-type", "application/json")
+    return proxy_to_backend("POST", f"/api/v1/spaces/{space_id}/count", body, content_type)
+
+
+@app.post("/api/v1/detections", tags=["dashboard"])
+async def proxy_detections(request: Request) -> Response:
+    body = await request.body()
+    content_type = request.headers.get("content-type", "application/json")
+    return proxy_to_backend("POST", "/api/v1/detections", body, content_type)
 
 
 @app.get("/")
