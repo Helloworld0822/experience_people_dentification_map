@@ -43,6 +43,12 @@ let activeSpaceId = 1;
 let floorData = null;
 const RUST_API_BASE = `${window.location.protocol}//${window.location.hostname}:8080`;
 const SPACE_CAPACITY = 20;
+const COMPACT_ZONE_LABELS = {
+  7: "더브레인",
+  8: "엑사하트",
+  9: "포토 키오스크",
+  10: "AR 스포츠",
+};
 const queryParams = new URLSearchParams(window.location.search);
 const EMBED_CAMERA_MODE = queryParams.get("embed") === "camera";
 const EMBED_SPACE_ID = Number.parseInt(queryParams.get("space") || "1", 10);
@@ -408,6 +414,13 @@ function rgbaFromHex(hex, alpha) {
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 }
 
+function compactZoneTitle(space) {
+  const compact = COMPACT_ZONE_LABELS[space.id];
+  if (compact) return compact;
+  const normalized = String(space.title_ko || "").replace(/\s+/g, " ").trim();
+  return normalized.length > 8 ? `${normalized.slice(0, 8)}…` : normalized;
+}
+
 function renderFloorSnapshot(snapshot) {
   const countById = new Map(snapshot.counts.map((entry) => [entry.space_id, entry.count]));
   const colorByZone = new Map(snapshot.zones.map((zone) => [zone.id, zone.color]));
@@ -416,11 +429,18 @@ function renderFloorSnapshot(snapshot) {
     const count = countById.get(space.id) ?? 0;
     const ratio = Math.min(100, Math.round((count / SPACE_CAPACITY) * 100));
     const color = colorByZone.get(space.zone) || "#42638f";
+    const isCompact = space.width < 120;
+    const title = isCompact ? `${space.id}. ${compactZoneTitle(space)}` : `${space.id}. ${space.title_ko}`;
+    const titleClass = `zone-title${isCompact ? " zone-title--compact" : ""}`;
+    const numberClass = `zone-number${isCompact ? " zone-number--compact" : ""}`;
+    const numberText = isCompact ? `${count}명` : `${count}명 / ${ratio}%`;
+    const titleY = isCompact ? space.y + 20 : space.y + 24;
+    const numberY = isCompact ? space.y + 38 : space.y + 48;
     return `
       <g class="zone" data-space-id="${space.id}">
         <rect x="${space.x}" y="${space.y}" width="${space.width}" height="${space.height}" rx="8" fill="${rgbaFromHex(color, 0.22)}" stroke="${color}" stroke-width="2"></rect>
-        <text class="zone-title" x="${space.x + space.width / 2}" y="${space.y + 24}" text-anchor="middle">${space.id}. ${space.title_ko}</text>
-        <text class="zone-number" x="${space.x + space.width / 2}" y="${space.y + 48}" text-anchor="middle">${count}명 / ${ratio}%</text>
+        <text class="${titleClass}" x="${space.x + space.width / 2}" y="${titleY}" text-anchor="middle">${title}</text>
+        <text class="${numberClass}" x="${space.x + space.width / 2}" y="${numberY}" text-anchor="middle">${numberText}</text>
       </g>
     `;
   }).join("");
@@ -428,9 +448,10 @@ function renderFloorSnapshot(snapshot) {
   cameraMarkers.innerHTML = snapshot.spaces.map((space) => {
     const centerX = ((space.x + (space.width / 2)) / snapshot.viewbox.width) * 100;
     const centerY = ((space.y + (space.height / 2)) / snapshot.viewbox.height) * 100;
+    const compactClass = space.width < 120 ? " camera-marker--compact" : "";
     return `
       <button
-        class="camera-marker"
+        class="camera-marker${compactClass}"
         data-space-id="${space.id}"
         type="button"
         aria-label="${space.title_ko} 카메라 열기"

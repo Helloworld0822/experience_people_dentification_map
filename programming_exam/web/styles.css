@@ -196,6 +196,8 @@ button { color: inherit; }
 .zone-calm > path { fill: #e6f1ff; stroke: #6d9fe5; }
 .zone-title { text-anchor: middle; font-size: 23px; font-weight: 800; fill: #151922; pointer-events: none; }
 .zone-number { text-anchor: middle; font-size: 20px; font-weight: 700; fill: #151922; pointer-events: none; }
+.zone-title--compact { font-size: 12px; font-weight: 800; letter-spacing: -.02em; }
+.zone-number--compact { font-size: 12px; font-weight: 700; }
 .zone-status { text-anchor: middle; font-size: 14px; font-weight: 700; fill: #fff; pointer-events: none; }
 .furniture { fill: rgba(90,125,160,.18); stroke: rgba(90,125,160,.4); }
 .wall-lines { fill: none; stroke: #7d8792; stroke-width: 4; }
@@ -234,6 +236,21 @@ button { color: inherit; }
   border-left: 5px solid #fff;
 }
 .camera-marker:hover { transform: scale(1.12); }
+.camera-marker--compact {
+  width: 34px;
+  height: 34px;
+  border-width: 3px;
+}
+.camera-marker--compact::before {
+  width: 11px;
+  height: 8px;
+}
+.camera-marker--compact::after {
+  right: 6px;
+  border-top-width: 3px;
+  border-bottom-width: 3px;
+  border-left-width: 4px;
+}
 .marker-ai { left: 5%; top: 8%; }
 .marker-robot { left: 59%; top: 6%; }
 .marker-vr { right: 4%; top: 30%; }
