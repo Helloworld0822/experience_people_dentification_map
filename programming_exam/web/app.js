@@ -230,6 +230,7 @@ function stopCamera() {
   countValue.textContent = "0";
   // Ensure dashboard count is reset when camera capture stops.
   void syncCountToBackend(activeSpaceId, 0);
+  void syncDetectionToBackend(activeSpaceId, { count: 0, boxes: [], inference_ms: null, density: null });
   const spaceParam = Number.isFinite(activeSpaceId) ? `?space=${encodeURIComponent(activeSpaceId)}` : "";
   void fetch(`/api/v1/live/clear${spaceParam}`, { method: "POST" }).catch(() => {});
 }
@@ -302,6 +303,7 @@ async function detectFrame() {
     drawDetections(result);
     countValue.textContent = result.count;
     await syncCountToBackend(activeSpaceId, result.count);
+    await syncDetectionToBackend(activeSpaceId, result);
     updateDensityBadge(result.density);
     latency.textContent = `${Math.round(result.inference_ms)} ms`;
     detectionStatus.textContent = densityStatus(result.density);
@@ -340,6 +342,30 @@ async function syncCountToBackend(spaceId, count) {
       body: JSON.stringify({ count }),
     });
     secondsSinceUpdate = 0;
+  } catch {
+    // Keep local detection active even when backend sync momentarily fails.
+  }
+}
+
+async function syncDetectionToBackend(spaceId, result) {
+  if (!Number.isFinite(spaceId)) return;
+  const confidences = result?.boxes?.map((box) => box.confidence) ?? [];
+  const bestConfidence = confidences.length ? Math.max(...confidences) : null;
+  try {
+    await fetch(`${RUST_API_BASE}/api/v1/detections`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        camera_id: `space-${spaceId}`,
+        space_id: spaceId,
+        people_count: result?.count ?? 0,
+        confidence: bestConfidence,
+        inference_ms: result?.inference_ms ?? null,
+        density_score: result?.density?.score ?? null,
+        density_level: result?.density?.level ?? null,
+        source: "programming_exam",
+      }),
+    });
   } catch {
     // Keep local detection active even when backend sync momentarily fails.
   }

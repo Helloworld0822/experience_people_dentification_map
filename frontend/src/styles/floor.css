@@ -709,12 +709,14 @@
   overflow: hidden;
 }
 
-.camera-feed__img {
+.camera-feed__img,
+.camera-feed__embed {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
   background: #1A1A1A;
+  border: 0;
 }
 
 .camera-feed__metrics {

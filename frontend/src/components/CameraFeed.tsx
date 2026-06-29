@@ -14,19 +14,31 @@ function densityFromCount(count: number): string {
   return '여유'
 }
 
+function densityFromLevel(level: string | null | undefined, count: number): string {
+  if (!level) return densityFromCount(count)
+  const labels: Record<string, string> = {
+    empty: '여유',
+    single: '여유',
+    sparse: '여유',
+    normal: '보통',
+    dense: '혼잡',
+    crowded: '매우 혼잡',
+  }
+  return labels[level] ?? densityFromCount(count)
+}
+
 export function CameraFeed({ spaceId, currentCount }: CameraFeedProps) {
-  const [error, setError] = useState<string | null>(null)
   const [density, setDensity] = useState<string | null>(null)
   const [cameraId, setCameraId] = useState<string | null>(null)
   const [inferenceMs, setInferenceMs] = useState<number | null>(null)
-  const [tick, setTick] = useState(0)
+  const [reloadKey, setReloadKey] = useState(0)
 
-  const streamBaseUrl = useMemo(() => {
-    const host = window.location.hostname || '127.0.0.1'
-    return `http://${host}:8765/api/v1/live/stream`
-  }, [])
-
-  const streamUrl = `${streamBaseUrl}?space=${spaceId}&n=${tick}`
+  const modelHost = useMemo(() => window.location.hostname || '127.0.0.1', [])
+  const embedUrl = useMemo(
+    () =>
+      `http://${modelHost}:8765/?embed=camera&space=${spaceId}&v=${reloadKey}`,
+    [modelHost, reloadKey, spaceId],
+  )
 
   useEffect(() => {
     setDensity(null)
@@ -41,16 +53,26 @@ export function CameraFeed({ spaceId, currentCount }: CameraFeedProps) {
         const latest = await fetchLatestDetection()
         if (cancelled) return
         const detection = latest.detection
-        if (detection && (detection.space_id === null || detection.space_id === spaceId)) {
-          setDensity(detection.density_level ?? densityFromCount(currentCount))
+        if (
+          detection &&
+          detection.space_id !== null &&
+          detection.space_id === spaceId
+        ) {
+          setDensity(densityFromLevel(detection.density_level, detection.people_count))
           setInferenceMs(detection.inference_ms ?? null)
           setCameraId(detection.camera_id)
-        } else {
-          setDensity((prev) => prev ?? densityFromCount(currentCount))
+          return
         }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : '최신 탐지값을 읽지 못했습니다.')
+        if (currentCount > 0) {
+          setDensity((prev) => prev ?? densityFromCount(currentCount))
+        } else {
+          setDensity(densityFromCount(0))
+          setInferenceMs(null)
+          setCameraId(null)
+        }
+      } catch {
+        if (!cancelled && currentCount > 0) {
+          setDensity((prev) => prev ?? densityFromCount(currentCount))
         }
       }
     }
@@ -65,15 +87,12 @@ export function CameraFeed({ spaceId, currentCount }: CameraFeedProps) {
   return (
     <div className="camera-feed">
       <div className="camera-feed__viewport">
-        <img
-          key={`${spaceId}-${tick}`}
-          src={streamUrl}
+        <iframe
+          key={`${spaceId}-${reloadKey}`}
+          src={embedUrl}
           title={`공간 ${spaceId} 실시간 카메라`}
-          className="camera-feed__img"
-          alt={`공간 ${spaceId} 실시간 카메라`}
-          onError={() =>
-            setError('8765에서 카메라를 먼저 시작해야 합니다. 8765 화면에서 카메라 연결 후 재연결을 눌러주세요.')
-          }
+          className="camera-feed__embed"
+          allow="camera; microphone"
         />
         <div className="camera-feed__metrics" role="status" aria-live="polite">
           <p>사람 수: {currentCount}명</p>
@@ -81,19 +100,11 @@ export function CameraFeed({ spaceId, currentCount }: CameraFeedProps) {
           <p>추론: {inferenceMs !== null ? `${Math.round(inferenceMs)}ms` : '대기'}</p>
           <p>카메라: {cameraId ?? '연결 대기'}</p>
         </div>
-        {error && (
-          <div className="camera-feed__error" role="alert">
-            <p>{error}</p>
-          </div>
-        )}
       </div>
       <button
         type="button"
         className="camera-feed__reconnect"
-        onClick={() => {
-          setError(null)
-          setTick((value) => value + 1)
-        }}
+        onClick={() => setReloadKey((value) => value + 1)}
       >
         재연결
       </button>
